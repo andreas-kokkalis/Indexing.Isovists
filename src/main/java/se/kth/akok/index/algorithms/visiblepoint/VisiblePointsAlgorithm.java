@@ -168,48 +168,4 @@ public class VisiblePointsAlgorithm {
 		else
 			return false;
 	}
-	
-	//TODO: testing, do it on memory
-	private boolean intersectsWithOtherGeometries2(LineString lineString, PolygonPoint startPoint, PolygonPoint endPoint) {
-		for(BasicPolygon polygon: polygons) {
-			if(startPoint.getPolygon().equals(polygon) || endPoint.getPolygon().equals(polygon))
-				continue;
-			if(lineString.intersects(polygon.getGeometry()))
-				return true;
-		}
-		return false;
-		
-//		boolean intersects = false;
-//		int numOfIntersections = intersectsFunction.lineIntersectsWithBuildings(buildingsTable, lineString, startPoint.getPolygon().getGeometry().getSRID(), startPoint.getPolygon().getId(), endPoint.getPolygon().getId());
-//		if(numOfIntersections == 1 && startPoint.getPolygon().getId().equals(endPoint.getPolygon().getId())) {
-//			Geometry geometry = intersectsFunction.getPolygonThatIntersects(buildingsTable, lineString, startPoint.getPolygon().getGeometry().getSRID(), startPoint.getPolygon().getId());
-//			Geometry intersection = lineString.intersection(geometry);
-//			if(intersection.getLength() < MIN_DISTANCE)
-//				intersects = false;
-//			else
-//				intersects = true;
-//		}
-//		else {
-//			if(numOfIntersections > 0)
-//				intersects = true;
-//			else
-//				intersects = false;
-//		}
-//		return intersects;
-	}
-	//TODO: testing, do it on memory
-	private boolean intersectsWithOtherGeometries2(LineString lineString, PolygonPoint startPoint) {
-//		int numOfIntersections = intersectsFunction.lineIntersectsWithBuildings(buildingsTable, lineString, startPoint.getPolygon().getGeometry().getSRID(), startPoint.getPolygon().getId(), startPoint.getPolygon().getId());
-//		if(numOfIntersections > 0)
-//			return true;
-//		else
-//			return false;
-		for(BasicPolygon polygon: polygons) {
-			if(startPoint.getPolygon().equals(polygon))
-				continue;
-			if(lineString.intersects(polygon.getGeometry()))
-				return true;
-		}
-		return false;
-	}
 }

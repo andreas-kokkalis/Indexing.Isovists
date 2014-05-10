@@ -10,16 +10,29 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
 
+/**
+ * Intersects implements two functions.
+ * <p>
+ * The first lineIntersectsWithBuildings, given a table name checks if a ray intersects with any known buildings. The operation is performed in the database.
+ * </p>
+ * <p>
+ * The second getPolygonThatIntersects, is called when lineIntersectsWithBuildings returns only one building. This functions returns the geometry of that single building,
+ * as it is stored in the database.
+ * </p>
+ * 
+ * @author Andreas Kokkalis
+ * 
+ */
 public class Intersects {
 	private Connection connection;
-	
+
 	public Intersects(Connection connection) {
 		this.connection = connection;
 	}
-	
+
 	public int lineIntersectsWithBuildings(String tableName, LineString lineString, int SRID, int startGeom, int endGeom) {
 		String query = "select count(*) from " + tableName + " b where ST_Intersects(b.way, ST_GeomFromText(?,?)) and b.osm_id <> ? and b.osm_id <> ?";
-		
+
 		int response = 0;
 		try {
 			PreparedStatement st = connection.prepareStatement(query);
@@ -39,7 +52,7 @@ public class Intersects {
 
 	public Geometry getPolygonThatIntersects(String tableName, LineString lineString, int SRID, int startGeom) {
 		String query = "select ST_AsText(b.way), st_SRID(b.way) from " + tableName + " b where ST_Intersects(b.way, ST_GeomFromText(?,?)) and b.osm_id <> ?";
-		
+
 		Geometry geometry = null;
 		try {
 			PreparedStatement st = connection.prepareStatement(query);

@@ -17,6 +17,12 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 
+/**
+ * SceneLogger stores the execution results in files, in the database and also provides an API for printing in STDOUT.
+ * 
+ * @author Andreas Kokkalis
+ * 
+ */
 public class SceneLogger {
 	private SceneLoader sceneLoader;
 	private static String filesLocation = "/mnt/201CB79E1CB76E02/Dropbox/Studies/KTH/Thesis/database/QGis";

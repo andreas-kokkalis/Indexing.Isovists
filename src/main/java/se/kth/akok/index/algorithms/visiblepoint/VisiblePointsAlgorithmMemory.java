@@ -1,11 +1,9 @@
 package se.kth.akok.index.algorithms.visiblepoint;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 
 import se.kth.akok.index.geometries.line.Ray;
 import se.kth.akok.index.geometries.line.RayType;
-import se.kth.akok.index.geometries.operations.Intersects;
 import se.kth.akok.index.geometries.operations.Touches;
 import se.kth.akok.index.geometries.point.BoundaryPoint;
 import se.kth.akok.index.geometries.point.PolygonPoint;
@@ -31,20 +29,15 @@ public class VisiblePointsAlgorithmMemory {
 	private PolygonPoint startPoint;
 	private ArrayList<Point> boundaryPoints;
 	private ArrayList<BasicPolygon> polygons;
-	private String buildingsTable;
-	private Intersects intersectsFunction;
 	/**
-	 * @param connection The connection to the database.
 	 * @param startPoint The point for which visible points are calculated
 	 * @param polygons All the polygons in the scene.
 	 * @param boundaryPoints The 4 boundary points of the scene.
 	 */
-	public VisiblePointsAlgorithmMemory(Connection connection, PolygonPoint startPoint, ArrayList<BasicPolygon> polygons, ArrayList<Point> boundaryPoints, String buildingsTable) {
+	public VisiblePointsAlgorithmMemory(PolygonPoint startPoint, ArrayList<BasicPolygon> polygons, ArrayList<Point> boundaryPoints) {
 		this.startPoint = startPoint;
 		this.polygons = polygons;
 		this.boundaryPoints = boundaryPoints;
-		this.buildingsTable = buildingsTable;
-		this.intersectsFunction = new Intersects(connection);
 	}
 
 	/**
@@ -120,7 +113,17 @@ public class VisiblePointsAlgorithmMemory {
 		}
 	}
 
-	//TODO: testing, do it on memory
+	/**
+	 * For a given lineString, it iterates through the known geometries, and tests if it intersects with them.
+	 * <p>
+	 * This function executes in the main memory, using the JTS library.
+	 * </p>
+	 * 
+	 * @param lineString The line string to check if it intersects with other geometries
+	 * @param startPoint PopygonPoint, the startPoint of the lineString
+	 * @param endPoint PolygonPoint, the endPoint of the lineString
+	 * @return Returns true if the lineString intersects with other geometries, else false.
+	 */
 	private boolean intersectsWithOtherGeometries2(LineString lineString, PolygonPoint startPoint, PolygonPoint endPoint) {
 		for(BasicPolygon polygon: polygons) {
 			if(startPoint.getPolygon().equals(polygon) || endPoint.getPolygon().equals(polygon))
@@ -130,7 +133,16 @@ public class VisiblePointsAlgorithmMemory {
 		}
 		return false;
 	}
-	//TODO: testing, do it on memory
+	/**
+	 * For a given lineString, it iterates through the known geometries, and tests if it intersects with them.
+	 * <p>
+	 * This function executes in the main memory, using the JTS library.
+	 * </p>
+	 * 
+	 * @param lineString The line string to check if it intersects with other geometries
+	 * @param startPoint PopygonPoint, the startPoint of the lineString
+	 * @return Returns true if the lineString intersects with other geometries, else false.
+	 */
 	private boolean intersectsWithOtherGeometries2(LineString lineString, PolygonPoint startPoint) {
 		for(BasicPolygon polygon: polygons) {
 			if(startPoint.getPolygon().equals(polygon))

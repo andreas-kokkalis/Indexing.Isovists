@@ -16,6 +16,13 @@ import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
 
+/**
+ * SceneLoader loads the scene from the database, given the name of the polygons' table and the boundary's table. It stores them on memory and provides an API to
+ * SceneBuilder for getting the data.
+ * 
+ * @author Andreas Kokkalis
+ * 
+ */
 public class SceneLoader {
 	private String sceneName;
 	private String buildingsTable;

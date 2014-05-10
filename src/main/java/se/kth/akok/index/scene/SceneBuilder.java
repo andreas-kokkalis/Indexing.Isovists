@@ -15,6 +15,12 @@ import se.kth.akok.index.geometries.point.PolygonPoint;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
 import se.kth.akok.index.thread.executors.VisibleShadowOrderExecutor;
 
+/**
+ * Scene Builder is responsible for loading the scene polygons, running the experiment and logging the results.
+ * 
+ * @author Andreas Kokkalis
+ *
+ */
 public class SceneBuilder {
 	private ArrayList<BasicPolygon> polygons;
 	private ArrayList<PolygonPoint> points;
