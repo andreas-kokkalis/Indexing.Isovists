@@ -100,6 +100,17 @@ public class SceneBuilder {
 		}
 		sceneLogger.storeIsovists(polygons);
 		
+		for(BasicPolygon polygon: polygons) {
+			if(polygon.getId().equals(2)) {
+				sceneLogger.printIncomingRays(polygon);
+				sceneLogger.printIncomingPoints(polygon);
+				sceneLogger.printIncomingShadowPoints(polygon);
+			}
+			
+		}
+		
+		
+		
 		RandomPointGenerator rpg = new RandomPointGenerator(polygons, boundary.getBoundaryPoints());
 		ArrayList<Point> randomPoints = rpg.generatePoints(500);
 		sceneLogger.storeRandomPoints(randomPoints, polygons.get(0).getGeometry().getSRID());
@@ -108,9 +119,9 @@ public class SceneBuilder {
 
 	public static void main(String[] args) throws Exception {
 
-//		 SceneBuilder scene = new SceneBuilder("scene_generated", "indexing_scene_generated_tbl", "indexing_boundary_generated_tbl");
+		 SceneBuilder scene = new SceneBuilder("scene_generated", "indexing_scene_generated_tbl", "indexing_boundary_generated_tbl");
 //		SceneBuilder scene = new SceneBuilder("scene_small", "indexing_scene_small_tbl", "indexing_boundary_small_tbl");
-		 SceneBuilder scene = new SceneBuilder("scene_large", "indexing_scene_large_tbl", "indexing_boundary_large_tbl");
+//		 SceneBuilder scene = new SceneBuilder("scene_large", "indexing_scene_large_tbl", "indexing_boundary_large_tbl");
 
 		System.out.println("#Polygons: " + scene.polygons.size());
 		System.out.println("#Points: " + scene.points.size());

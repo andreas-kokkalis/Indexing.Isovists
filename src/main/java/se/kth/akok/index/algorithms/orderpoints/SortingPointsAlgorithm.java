@@ -32,7 +32,7 @@ public class SortingPointsAlgorithm {
 	public void sortPointsFor(PolygonPoint startPoint) {
 
 		GeometryFactory factory = new GeometryFactory();
-		// Define adjacent edges. An ray from a to b is a polygon edge, if point a+b/2 is also on the polygon.
+		// Define adjacent edges. A ray from a to b is a polygon edge, if point a+b/2 is also on the polygon.
 		ArrayList<VisiblePoint> adjacent = new ArrayList<VisiblePoint>();
 		for (VisiblePoint visiblePoint : startPoint.getVisiblePoints()) {
 			if (visiblePoint.getType().equals(VisibleType.SAME_OBJECT_VISIBLE)) {

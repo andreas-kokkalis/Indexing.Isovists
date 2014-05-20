@@ -171,6 +171,30 @@ public class SceneLogger {
 		System.out.println("===============================================================================\n");
 	}
 
+	public void printIncomingPoints(BasicPolygon polygon) {
+		GeometryFactory factory = new GeometryFactory();
+		System.out.println("\n===============================================================================");
+		System.out.println("Polygon: " + polygon.getId());
+		System.out.println("\nINCOMING POINTS:\t" + polygon.getIncomingPoints().size() + "\n-----------------");
+		for (IncomingPoint incomingPoint : polygon.getIncomingPoints()) {
+			if (!incomingPoint.getRay().getLine().toGeometry(factory).within(polygon.getPolygonIsovist()))
+				System.out.println(incomingPoint.getPoint().toString());
+		}
+		System.out.println("===============================================================================\n");
+	}
+
+	public void printIncomingShadowPoints(BasicPolygon polygon) {
+		GeometryFactory factory = new GeometryFactory();
+		System.out.println("\n===============================================================================");
+		System.out.println("Polygon: " + polygon.getId());
+		System.out.println("\nINCOMING SHADOW POINTS:\t" + polygon.getIncomingPoints().size() + "\n-----------------");
+		for (IncomingPoint incomingPoint : polygon.getIncomingPoints()) {
+			if (!incomingPoint.getRay().getLine().toGeometry(factory).within(polygon.getPolygonIsovist()))
+				System.out.println(incomingPoint.getShadowPoint().getPoint().toString());
+		}
+		System.out.println("===============================================================================\n");
+	}
+
 	public void printRays(PolygonPoint point, boolean visible, boolean shadow, boolean allRays) {
 		System.out.println("\n===============================================================================");
 		System.out.println("Polygon: " + point.getPolygon().getId());
