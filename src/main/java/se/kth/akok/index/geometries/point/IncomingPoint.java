@@ -1,7 +1,7 @@
 package se.kth.akok.index.geometries.point;
 
-import se.kth.akok.index.geometries.line.Ray;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
+import se.kth.akok.index.geometries.ray.Ray;
 
 import com.vividsolutions.jts.geom.Point;
 

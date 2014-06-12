@@ -1,9 +1,10 @@
 package se.kth.akok.index.geometries.point;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
-import se.kth.akok.index.geometries.line.Ray;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
+import se.kth.akok.index.geometries.ray.Ray;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -24,7 +25,7 @@ public class PolygonPoint extends BasicPolygonPoint {
 	private ArrayList<Ray> visibleRays;
 	private ArrayList<Ray> shadowRays;
 	private ArrayList<Ray> boundaryRays;
-	private ArrayList<Ray> allRays;
+	private LinkedList<Ray> allRays;
 	private Geometry pointIsovist;
 	private boolean pointIsovistNotComputable;
 
@@ -38,7 +39,7 @@ public class PolygonPoint extends BasicPolygonPoint {
 		this.visibleRays = new ArrayList<Ray>();
 		this.shadowRays = new ArrayList<Ray>();
 		this.boundaryRays = new ArrayList<Ray>();
-		this.allRays = new ArrayList<Ray>();
+		this.allRays = new LinkedList<Ray>();
 		pointIsovistNotComputable = false;
 	}
 
@@ -66,7 +67,7 @@ public class PolygonPoint extends BasicPolygonPoint {
 		return boundaryRays;
 	}
 
-	public ArrayList<Ray> getAllRays() {
+	public LinkedList<Ray> getAllRays() {
 		return allRays;
 	}
 
@@ -80,6 +81,14 @@ public class PolygonPoint extends BasicPolygonPoint {
 
 	public void setPointIsovist(Geometry pointIsovist) {
 		this.pointIsovist = pointIsovist;
+	}
+
+	public boolean isPointIsovistNotComputable() {
+		return pointIsovistNotComputable;
+	}
+
+	public void setPointIsovistNotComputable(boolean pointIsovistNotComputable) {
+		this.pointIsovistNotComputable = pointIsovistNotComputable;
 	}
 
 	/**
@@ -97,7 +106,7 @@ public class PolygonPoint extends BasicPolygonPoint {
 		}
 		return false;
 	}
-
+	
 	/**
 	 * Finds if the given coordinate corresponds to a visible point already defined for this polygon point. If the coordinate is equal to a known visible point
 	 * coordinate, or if it is within the minimum defined distance, then it considers it the same.
@@ -112,13 +121,4 @@ public class PolygonPoint extends BasicPolygonPoint {
 				return true;
 		return false;
 	}
-
-	public boolean isPointIsovistNotComputable() {
-		return pointIsovistNotComputable;
-	}
-
-	public void setPointIsovistNotComputable(boolean pointIsovistNotComputable) {
-		this.pointIsovistNotComputable = pointIsovistNotComputable;
-	}
-
 }

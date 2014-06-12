@@ -1,7 +1,7 @@
 package se.kth.akok.index.geometries.point;
 
-import se.kth.akok.index.geometries.line.Ray;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
+import se.kth.akok.index.geometries.ray.Ray;
 
 import com.vividsolutions.jts.geom.Point;
 
@@ -12,19 +12,19 @@ import com.vividsolutions.jts.geom.Point;
  * 
  */
 public class VisiblePoint extends PolygonPoint {
-	private VisibleType type;
+	private VisiblePointType type;
 	private Ray ray;
 
-	public VisiblePoint(Point point, BasicPolygon polygon, VisibleType type) {
+	public VisiblePoint(Point point, BasicPolygon polygon, VisiblePointType type) {
 		super(point, polygon);
 		setType(type);
 	}
 
-	public VisibleType getType() {
+	public VisiblePointType getType() {
 		return type;
 	}
 
-	public void setType(VisibleType type) {
+	public void setType(VisiblePointType type) {
 		this.type = type;
 	}
 

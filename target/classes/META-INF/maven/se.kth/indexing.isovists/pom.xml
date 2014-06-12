@@ -12,6 +12,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<javasimon.version>3.5.0</javasimon.version>
 	</properties>
 
 	<dependencies>
@@ -44,6 +45,22 @@
 			<groupId>com.vividsolutions</groupId>
 			<artifactId>jts</artifactId>
 			<version>1.13</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.javasimon</groupId>
+			<artifactId>javasimon-core</artifactId>
+			<version>${javasimon.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.javasimon</groupId>
+			<artifactId>javasimon-jdbc4</artifactId>
+			<version>${javasimon.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.javasimon</groupId>
+			<artifactId>javasimon-console-embed</artifactId>
+			<version>${javasimon.version}</version>
 		</dependency>
 	</dependencies>
 

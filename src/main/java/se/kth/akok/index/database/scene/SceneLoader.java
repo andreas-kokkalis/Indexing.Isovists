@@ -1,5 +1,7 @@
 package se.kth.akok.index.database.scene;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -13,6 +15,7 @@ import se.kth.akok.index.geometries.polygon.BasicPolygon;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineSegment;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
 
@@ -31,8 +34,9 @@ public class SceneLoader {
 	private ArrayList<PolygonPoint> points;
 	private Boundary boundary;
 	private Connection connection;
+	private PrintWriter logFile;
 
-	public SceneLoader(String sceneName, String buildingsTable, String boundaryTable, Connection connection) {
+	public SceneLoader(String sceneName, String buildingsTable, String boundaryTable, Connection connection) throws FileNotFoundException {
 		this.connection = connection;
 		this.sceneName = sceneName;
 		this.buildingsTable = buildingsTable;
@@ -43,6 +47,8 @@ public class SceneLoader {
 		points = new ArrayList<PolygonPoint>();
 		for (BasicPolygon polygon : polygons)
 			points.addAll(polygon.getPolygonPoints());
+
+		setLogFile(new PrintWriter("/mnt/201CB79E1CB76E02/Dropbox/Studies/KTH/Thesis/database/QGis/" + sceneName + "/" + sceneName + ".txt"));
 	}
 
 	private void loadPolygons() {
@@ -174,6 +180,27 @@ public class SceneLoader {
 		this.boundary = new Boundary(minXSegment, maxXSegment, minYSegment, maxYSegment);
 	}
 
+	public ArrayList<Point> loadRandomPoints(int num) {
+		ArrayList<Point> randomPoints = new ArrayList<Point>();
+		String tableName = "random_points_" + sceneName + "_" + num;
+		String select = "Select ST_AsText(way) from " + tableName;
+		try {
+			PreparedStatement statement = connection.prepareStatement(select, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+			ResultSet results = statement.executeQuery();
+			while (results.next()) {
+				String wktGeometry = results.getString(1);
+				Geometry geometry = new WKTReader().read(wktGeometry);
+				Point point = geometry.getCentroid();
+				randomPoints.add(point);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return randomPoints;
+	}
+
 	public ArrayList<BasicPolygon> getPolygons() {
 		return polygons;
 	}
@@ -192,5 +219,13 @@ public class SceneLoader {
 
 	public String getSceneName() {
 		return sceneName;
+	}
+
+	public PrintWriter getLogFile() {
+		return logFile;
+	}
+
+	public void setLogFile(PrintWriter logFile) {
+		this.logFile = logFile;
 	}
 }

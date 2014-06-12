@@ -1,11 +1,12 @@
 package se.kth.akok.index.algorithms.orderpoints;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
-import se.kth.akok.index.geometries.line.Ray;
 import se.kth.akok.index.geometries.point.PolygonPoint;
 import se.kth.akok.index.geometries.point.VisiblePoint;
-import se.kth.akok.index.geometries.point.VisibleType;
+import se.kth.akok.index.geometries.point.VisiblePointType;
+import se.kth.akok.index.geometries.ray.Ray;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -22,7 +23,7 @@ import com.vividsolutions.jts.geom.Point;
  * 
  */
 public class SortingPointsAlgorithm {
-	private ArrayList<Ray> allRays;
+	private LinkedList<Ray> allRays;
 	private static double MIN_DISTANCE = 0.01;
 
 	/**
@@ -35,7 +36,7 @@ public class SortingPointsAlgorithm {
 		// Define adjacent edges. A ray from a to b is a polygon edge, if point a+b/2 is also on the polygon.
 		ArrayList<VisiblePoint> adjacent = new ArrayList<VisiblePoint>();
 		for (VisiblePoint visiblePoint : startPoint.getVisiblePoints()) {
-			if (visiblePoint.getType().equals(VisibleType.SAME_OBJECT_VISIBLE)) {
+			if (visiblePoint.getType().equals(VisiblePointType.SAME_OBJECT_VISIBLE)) {
 				Coordinate middleCoordinate = visiblePoint.getRay().getLine().midPoint();
 				Point middlePoint = factory.createPoint(middleCoordinate);
 				if (startPoint.getPolygon().getGeometry().touches(middlePoint) || startPoint.getPolygon().getGeometry().isWithinDistance(middlePoint, MIN_DISTANCE)) {
@@ -66,7 +67,6 @@ public class SortingPointsAlgorithm {
 			return;
 //			throw new NullPointerException("Could not identify the adjacent edges for the poinnt: " + startPoint.getPoint().toString() + " of polygon: " + startPoint.getPolygon().getGeometry().toString());
 		}
-
 	}
 
 	/**
@@ -114,11 +114,16 @@ public class SortingPointsAlgorithm {
 		}
 		min.setAngle(0.0);
 
-		// Remove digits from doubles.
+		//TODO: changing the accuracy
 		for (Ray ray : allRays) {
-			Double temp = Math.floor(ray.getAngle() * 1000.0) / 1000.0;
+			Double temp = Math.floor(ray.getAngle() * 100000.0) / 100000.0;
 			ray.setAngle(temp);
 		}
+		// Remove digits from doubles.
+//		for (Ray ray : allRays) {
+//			Double temp = Math.floor(ray.getAngle() * 1000.0) / 1000.0;
+//			ray.setAngle(temp);
+//		}
 
 		// Define if min is 0 or 2Π. This defines the clockwise order. If any angle is greater than max, then the order is from max to min, else from min to max.
 		boolean zeroAs2Pi = false;

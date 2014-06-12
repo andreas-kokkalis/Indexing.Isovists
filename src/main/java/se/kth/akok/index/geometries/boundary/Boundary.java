@@ -12,7 +12,7 @@ import com.vividsolutions.jts.geom.Point;
  * Represents the geometry of the bounding box of the scene.
  * 
  * @author Andreas Kokkalis
- *
+ * 
  */
 public class Boundary {
 	private LineSegment minX, maxX, minY, maxY;
@@ -57,6 +57,22 @@ public class Boundary {
 			boundaryPoints.add(factory.createPoint(coordinate));
 	}
 
+	/**
+	 * Checks if the shadow point is on the bounding box. lineIntersection extends infinitely the line segments, and thus the projection maybe on a different edge of the
+	 * bounding box than preferred.
+	 * 
+	 * @param ls the line segment representing the edge of the bounding box
+	 * @param coordinate the coordinates of the intersection point
+	 * @return true if coordinate is on line segment, else false
+	 */
+	public static boolean isPointOnBoundary(LineSegment ls, Coordinate coordinate) {
+		// System.out.println("x: " + c.x + "\ty: " + c.y + "line: " + ls.toString());
+		if (((ls.p0.x <= coordinate.x && coordinate.x <= ls.p1.x) && (ls.p0.y <= coordinate.y && coordinate.y <= ls.p1.y)) || ((ls.p1.x <= coordinate.x && coordinate.x <= ls.p0.x) && (ls.p1.y <= coordinate.y && coordinate.y <= ls.p0.y)))
+			return true;
+		else
+			return false;
+	}
+
 	public LineSegment getMinX() {
 		return minX;
 	}
@@ -79,21 +95,5 @@ public class Boundary {
 
 	public ArrayList<Point> getBoundaryPoints() {
 		return boundaryPoints;
-	}
-
-	/**
-	 * Checks if the shadow point is on the bounding box. lineIntersection extends infinitely the line segments, and thus the projection maybe on a different edge of the
-	 * bounding box than preferred.
-	 * 
-	 * @param ls the line segment representing the edge of the bounding box
-	 * @param coordinate the coordinates of the intersection point
-	 * @return true if coordinate is on line segment, else false
-	 */
-	public static boolean isPointOnBoundary(LineSegment ls, Coordinate coordinate) {
-		// System.out.println("x: " + c.x + "\ty: " + c.y + "line: " + ls.toString());
-		if (((ls.p0.x <= coordinate.x && coordinate.x <= ls.p1.x) && (ls.p0.y <= coordinate.y && coordinate.y <= ls.p1.y)) || ((ls.p1.x <= coordinate.x && coordinate.x <= ls.p0.x) && (ls.p1.y <= coordinate.y && coordinate.y <= ls.p0.y)))
-			return true;
-		else
-			return false;
 	}
 }

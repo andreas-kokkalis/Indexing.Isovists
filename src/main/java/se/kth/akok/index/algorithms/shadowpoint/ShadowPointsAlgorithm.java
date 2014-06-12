@@ -4,16 +4,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import se.kth.akok.index.geometries.boundary.Boundary;
-import se.kth.akok.index.geometries.line.Ray;
-import se.kth.akok.index.geometries.line.RayType;
 import se.kth.akok.index.geometries.operations.Touches;
 import se.kth.akok.index.geometries.point.IncomingPoint;
 import se.kth.akok.index.geometries.point.PolygonPoint;
 import se.kth.akok.index.geometries.point.ShadowPoint;
 import se.kth.akok.index.geometries.point.ShadowPointType;
 import se.kth.akok.index.geometries.point.VisiblePoint;
-import se.kth.akok.index.geometries.point.VisibleType;
+import se.kth.akok.index.geometries.point.VisiblePointType;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
+import se.kth.akok.index.geometries.ray.Ray;
+import se.kth.akok.index.geometries.ray.RayType;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -63,7 +63,7 @@ public class ShadowPointsAlgorithm {
 
 			// This adds the opposite segment of a polygon edge. It provides more accurate isovist for buildings that are close to the boundary.
 			// TODO: probably this code is useless
-			if (endPoint.getType().equals(VisibleType.SAME_OBJECT_VISIBLE)) {
+			if (endPoint.getType().equals(VisiblePointType.SAME_OBJECT_VISIBLE)) {
 				LineSegment reversed = new LineSegment(endPoint.getPoint().getCoordinate(), startPoint.getPoint().getCoordinate());
 				LineSegment extendedReversed = extendSegmentToBoundary(startPoint.getPoint(), reversed);
 				computeShadowPointForSegment(extendedReversed, endPoint, startPoint, endPointPolygon);

@@ -3,15 +3,15 @@ package se.kth.akok.index.algorithms.visiblepoint;
 import java.sql.Connection;
 import java.util.ArrayList;
 
-import se.kth.akok.index.geometries.line.Ray;
-import se.kth.akok.index.geometries.line.RayType;
 import se.kth.akok.index.geometries.operations.Intersects;
 import se.kth.akok.index.geometries.operations.Touches;
 import se.kth.akok.index.geometries.point.BoundaryPoint;
 import se.kth.akok.index.geometries.point.PolygonPoint;
 import se.kth.akok.index.geometries.point.VisiblePoint;
-import se.kth.akok.index.geometries.point.VisibleType;
+import se.kth.akok.index.geometries.point.VisiblePointType;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
+import se.kth.akok.index.geometries.ray.Ray;
+import se.kth.akok.index.geometries.ray.RayType;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -66,7 +66,7 @@ public class VisiblePointsAlgorithm {
 			if (Touches.lineTouchesWithPolygon(lineSegment.toGeometry(factory), polygonPoint.getPolygon().getGeometry()) && lineSegment.getLength() > MIN_DISTANCE) {
 				// added after spotting bug with geometry surrounding other geometries.
 				if (!intersectsWithOtherGeometries(lineSegment.toGeometry(factory), startPoint, polygonPoint)) {
-					VisiblePoint visiblePoint = new VisiblePoint(polygonPoint.getPoint(), polygonPoint.getPolygon(), VisibleType.SAME_OBJECT_VISIBLE);
+					VisiblePoint visiblePoint = new VisiblePoint(polygonPoint.getPoint(), polygonPoint.getPolygon(), VisiblePointType.SAME_OBJECT_VISIBLE);
 					visiblePoints.add(visiblePoint);
 					Ray ray = new Ray(lineSegment, RayType.VISIBLE_RAY, visiblePoint);
 					visiblePoint.setRay(ray);
@@ -90,7 +90,7 @@ public class VisiblePointsAlgorithm {
 					boolean lineTouchesStartPolygon = Touches.lineTouchesWithPolygon(lineString, startPointPolygon);
 					// Two points are visible if the connecting line only touches those points.
 					if (lineTouchesEndPolygon && lineTouchesStartPolygon) {
-						VisiblePoint visiblePoint = new VisiblePoint(polygonPoint.getPoint(), polygon, VisibleType.OTHER_OBJECT_VISIBLE);
+						VisiblePoint visiblePoint = new VisiblePoint(polygonPoint.getPoint(), polygon, VisiblePointType.OTHER_OBJECT_VISIBLE);
 						visiblePoints.add(visiblePoint);
 						// Add the ray
 						Ray ray = new Ray(lineSegment, RayType.VISIBLE_RAY, visiblePoint);

@@ -7,13 +7,15 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-import se.kth.akok.index.geometries.line.Ray;
+import org.javasimon.Stopwatch;
+
+import se.kth.akok.experiments.stopwatch.StopWatchPrinter;
 import se.kth.akok.index.geometries.point.IncomingPoint;
 import se.kth.akok.index.geometries.point.PolygonPoint;
 import se.kth.akok.index.geometries.point.ShadowPoint;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
+import se.kth.akok.index.geometries.ray.Ray;
 
-import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 
@@ -33,24 +35,26 @@ public class SceneLogger {
 		this.connection = connection;
 	}
 
-	// ========================================================================================================================== //
-	// =================================== STORE IN DB ========================================================================== //
-	// ========================================================================================================================== //
+	/**
+	 * Stores in the database the isovist of each polygon for the given test scene
+	 * 
+	 * @param polygons The list of polygons with computed isovist per polygon
+	 */
 	public void storeIsovists(ArrayList<BasicPolygon> polygons) {
 		String tableName = sceneLoader.getSceneName() + "_all_isovists_mem";
 		try {
 
 			for (BasicPolygon polygon : polygons) {
-				String viewName = tableName + "_polygon_isovist_" + polygon.getId();
+				String viewName = "_" + tableName + "_polygon_isovist_" + polygon.getId();
 
-				String deleteView = "DROP VIEW IF EXISTS " + viewName;
+				String deleteView = "DROP TABLE IF EXISTS " + viewName;
 				PreparedStatement statement = connection.prepareStatement(deleteView);
 				statement.execute();
 				statement.close();
 			}
 
 			String delete = "DROP TABLE IF EXISTS " + tableName;
-			String create = "CREATE TABLE " + tableName + " (isovist geometry, polygon_id bigint)";
+			String create = "CREATE TABLE " + tableName + " (isovist geometry, polygon_id bigint primary key)";
 			String index = "create index " + tableName + "_geom_index on " + tableName + " using gist(isovist)";
 			String insert = "INSERT INTO " + tableName + "(isovist, polygon_id) VALUES(ST_GeomFromText(?, ?), ?)";
 
@@ -68,44 +72,55 @@ public class SceneLogger {
 			connection.setAutoCommit(false);
 			statement = connection.prepareStatement(insert);
 			for (BasicPolygon polygon : polygons) {
+				if (polygon.getPolygonIsovist() != null) {
+					statement.setObject(1, polygon.getFullIsovist().toText());
+					statement.setInt(2, polygon.getGeometry().getSRID());
+					statement.setObject(3, polygon.getId());
+					statement.addBatch();
 
-				Geometry fullIsovist;
-				if (polygon.getIncomingIsovist() != null)
-					fullIsovist = polygon.getPolygonIsovist().union(polygon.getIncomingIsovist());
-				else
-					fullIsovist = polygon.getPolygonIsovist();
-				statement.setObject(1, fullIsovist.toText());
-				statement.setInt(2, polygon.getGeometry().getSRID());
-				statement.setObject(3, polygon.getId());
-				statement.addBatch();
+				}
 			}
 			statement.executeBatch();
 			connection.commit();
+			connection.setAutoCommit(true);
 			storeSeperatePolygonIsovists(polygons, tableName);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * Stores the isovist of a polygon.
+	 * 
+	 * @param polygons The list of polygons
+	 * @param tableName	The tableName of the scene
+	 */
 	private void storeSeperatePolygonIsovists(ArrayList<BasicPolygon> polygons, String tableName) {
 
 		try {
-			connection.setAutoCommit(false);
-
 			for (BasicPolygon polygon : polygons) {
-				String viewName = tableName + "_polygon_isovist_" + polygon.getId();
+				if (polygon.getPolygonIsovist() != null) {
 
-				String insert = "CREATE VIEW " + viewName + " AS SELECT * FROM " + tableName + " where polygon_id = " + polygon.getId();
-				PreparedStatement statement = connection.prepareStatement(insert);
-				statement.execute();
-				statement.close();
+					String viewName = "_" + tableName + "_polygon_isovist_" + polygon.getId();
+
+					String insert = "CREATE TABLE " + viewName + " AS SELECT isovist, polygon_id FROM " + tableName + " where polygon_id = " + polygon.getId();
+					PreparedStatement st = connection.prepareStatement(insert);
+
+					st.executeUpdate();
+					st.close();
+				}
 			}
-			connection.commit();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * Stores an arrayList of random points in the database, for a given test scene.
+	 * 
+	 * @param randomPoints The list of points.
+	 * @param srid
+	 */
 	public void storeRandomPoints(ArrayList<Point> randomPoints, int srid) {
 		String tableName = "random_points_" + sceneLoader.getSceneName() + "_" + randomPoints.size();
 		try {
@@ -127,6 +142,7 @@ public class SceneLogger {
 			}
 			statement.executeBatch();
 			connection.commit();
+			connection.setAutoCommit(true);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -195,7 +211,7 @@ public class SceneLogger {
 		System.out.println("===============================================================================\n");
 	}
 
-	public void printRays(PolygonPoint point, boolean visible, boolean shadow, boolean allRays) {
+	public static void printRays(PolygonPoint point, boolean visible, boolean shadow, boolean allRays) {
 		System.out.println("\n===============================================================================");
 		System.out.println("Polygon: " + point.getPolygon().getId());
 		if (visible) {
@@ -211,7 +227,7 @@ public class SceneLogger {
 		if (allRays) {
 			System.out.println("\nALL RAYS: " + point.getAllRays().size() + "\n-----------------");
 			for (Ray ray : point.getAllRays())
-				System.out.println(ray.getLine().toString() + ",");
+				System.out.println(point.getAllRays().indexOf(ray) + ";" + ray.getLine().toString() + ",");
 		}
 		System.out.println("===============================================================================\n");
 
@@ -274,7 +290,7 @@ public class SceneLogger {
 				PrintWriter writer = new PrintWriter(filesLocation + "/" + sceneLoader.getSceneName() + "/" + "rays_all/" + "polygon_" + thisPolygon.getId() + " _all_rays.txt");
 				for (PolygonPoint point : thisPolygon.getPolygonPoints())
 					for (Ray ray : point.getAllRays())
-						writer.println(ray.getLine().toString());
+						writer.println(point.getAllRays().indexOf(ray) + ";" + ray.getLine().toString());
 				writer.close();
 			}
 		}
@@ -314,4 +330,17 @@ public class SceneLogger {
 		}
 	}
 
+	public void logExecutionTime(String sceneName, Stopwatch stopwatchTotal, Stopwatch stopWatchShadow, Stopwatch stopWatchIsovist) throws FileNotFoundException {
+		String location = "/mnt/201CB79E1CB76E02/Dropbox/Studies/KTH/Thesis/Experiments/";
+		String fileName = "stopwatch_" + sceneName + ".txt";
+
+		PrintWriter writer = new PrintWriter(location + fileName);
+		writer.print(StopWatchPrinter.getStopWatch(stopwatchTotal));
+		writer.println();
+		writer.print(StopWatchPrinter.getStopWatch(stopWatchShadow));
+		writer.println();
+		writer.print(StopWatchPrinter.getStopWatch(stopWatchIsovist));
+
+		writer.close();
+	}
 }

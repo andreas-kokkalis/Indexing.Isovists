@@ -1,6 +1,7 @@
 package se.kth.akok.index.geometries.polygon;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 import se.kth.akok.index.geometries.point.IncomingPoint;
 import se.kth.akok.index.geometries.point.PolygonPoint;
@@ -25,7 +26,8 @@ public class BasicPolygon {
 	private ArrayList<PolygonPoint> polygonPoints;
 	private ArrayList<IncomingPoint> incomingPoints;
 	private Geometry polygonIsovist;
-	private Geometry incomingIsovist;
+	private Collection<Geometry> incomingIsovist;
+	private Geometry fullIsovist;
 
 	public BasicPolygon(Geometry geometry) {
 		this.geometry = geometry;
@@ -65,7 +67,7 @@ public class BasicPolygon {
 		return polygonIsovist;
 	}
 
-	public Geometry getIncomingIsovist() {
+	public Collection<Geometry> getIncomingIsovist() {
 		return incomingIsovist;
 	}
 
@@ -85,7 +87,7 @@ public class BasicPolygon {
 		this.polygonIsovist = polygonIsovist;
 	}
 
-	public void setIncomingIsovist(Geometry incomingIsovist) {
+	public void setIncomingIsovist(Collection<Geometry> incomingIsovist) {
 		this.incomingIsovist = incomingIsovist;
 	}
 
@@ -118,5 +120,13 @@ public class BasicPolygon {
 				return true;
 		}
 		return false;
+	}
+
+	public Geometry getFullIsovist() {
+		return fullIsovist;
+	}
+
+	public void setFullIsovist(Geometry fullIsovist) {
+		this.fullIsovist = fullIsovist;
 	}
 }

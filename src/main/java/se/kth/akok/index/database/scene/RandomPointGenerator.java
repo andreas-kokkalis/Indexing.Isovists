@@ -31,8 +31,8 @@ public class RandomPointGenerator {
 
 	}
 
-	public ArrayList<Point> generatePoints(int numPoints) {
 		GeometryFactory factory = new GeometryFactory();
+		public ArrayList<Point> generatePoints(int numPoints) {
 		Envelope env = polygonalMask.getEnvelopeInternal();
 		ArrayList<Point> points = new ArrayList<Point>();
 		

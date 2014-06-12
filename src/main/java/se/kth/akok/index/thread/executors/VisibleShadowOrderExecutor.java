@@ -3,6 +3,10 @@ package se.kth.akok.index.thread.executors;
 import java.sql.Connection;
 import java.util.ArrayList;
 
+import org.javasimon.SimonManager;
+import org.javasimon.Split;
+import org.javasimon.Stopwatch;
+
 import se.kth.akok.index.algorithms.orderpoints.SortingPointsAlgorithm;
 import se.kth.akok.index.algorithms.shadowpoint.ShadowPointsAlgorithm;
 import se.kth.akok.index.algorithms.visiblepoint.VisiblePointsAlgorithmMemory;
@@ -40,6 +44,8 @@ public class VisibleShadowOrderExecutor implements Runnable {
 	}
 
 	public void run() {
+		Stopwatch stopwatch = SimonManager.getStopwatch("thread_" + startPoint.getPolygon().getId() + "_" + startPoint.hashCode());
+		Split split = stopwatch.start();
 		// VisiblePointsAlgorithm vpa = new VisiblePointsAlgorithm(connection, this.startPoint, this.polygons, this.boundary.getBoundaryPoints(), buildingsName);
 		VisiblePointsAlgorithmMemory vpa = new VisiblePointsAlgorithmMemory(this.startPoint, this.polygons, this.boundary.getBoundaryPoints());
 		vpa.setVisiblePointsOfStartPoint();
@@ -49,6 +55,9 @@ public class VisibleShadowOrderExecutor implements Runnable {
 
 		SortingPointsAlgorithm sopa = new SortingPointsAlgorithm();
 		sopa.sortPointsFor(startPoint);
+
+		split.stop();
+		SimonManager.getStopwatch("se.kth.akok.index.scene.SceneBuilder-visible-shadow-order").addSplit(split);
 	}
 
 }

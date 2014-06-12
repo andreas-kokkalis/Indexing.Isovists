@@ -3,17 +3,22 @@ package se.kth.akok.index.algorithms.isovist;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 
-import se.kth.akok.index.geometries.line.Ray;
+import org.javasimon.SimonManager;
+import org.javasimon.Split;
+import org.javasimon.Stopwatch;
+
+import se.kth.akok.index.database.scene.SceneLoader;
 import se.kth.akok.index.geometries.point.IncomingPoint;
 import se.kth.akok.index.geometries.point.PolygonPoint;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
+import se.kth.akok.index.geometries.ray.Ray;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
@@ -37,24 +42,72 @@ import com.vividsolutions.jts.geom.TopologyException;
 public class Isovist implements Runnable {
 	private ArrayList<BasicPolygon> allPolygons;
 	private BasicPolygon thisPolygon;
-	private GeometryFactory factory;
+	private SceneLoader loader;
 	private static double MIN_DISTANCE = 0.01;
+	private static double MIN_AREA = 0.00001;
 
 	/**
 	 * Constructor of the Isovist class
 	 * 
 	 * @param allPolygons All polygons in the scene.
 	 */
-	public Isovist(ArrayList<BasicPolygon> allPolygons, BasicPolygon thisPolygon) {
+	public Isovist(ArrayList<BasicPolygon> allPolygons, BasicPolygon thisPolygon, SceneLoader loader) {
 		this.allPolygons = allPolygons;
 		this.thisPolygon = thisPolygon;
-		this.factory = new GeometryFactory();
+		this.loader = loader;
 	}
 
 	public void run() {
+		// Stopwatch counting time for a given polygon.
+		Stopwatch stopwatch = SimonManager.getStopwatch("thread_" + thisPolygon.getId());
+		Split split = stopwatch.start();
+
 		polygonIsovist(thisPolygon);
 		if (!thisPolygon.getIncomingPoints().isEmpty())
 			incomingIsovist(thisPolygon);
+
+		if (thisPolygon.getPolygonIsovist() == null) {
+			System.out.println("EXCEPTION polygon " + thisPolygon.getGeometry().toString());
+			throw (new NullPointerException("EXCEPTION polygon " + thisPolygon.getGeometry().toString()));
+		}
+
+		if (thisPolygon.getIncomingIsovist() != null) {
+			Geometry finalIsovist = null;
+			for (Geometry geom : thisPolygon.getIncomingIsovist()) {
+				try {
+					if (thisPolygon.getPolygonIsovist().contains(geom) || Double.compare(geom.getArea(), MIN_AREA) < 0)
+						continue;
+					finalIsovist = thisPolygon.getPolygonIsovist().union(geom);
+				} catch (IllegalArgumentException | TopologyException e1) {
+					try{
+						finalIsovist = geom.union(thisPolygon.getPolygonIsovist());
+					}catch(IllegalArgumentException | TopologyException e) {
+						StringBuilder sb = new StringBuilder();
+						sb.append("\n\n---------------------------------------\n");
+						sb.append("Test scene: " + loader.getSceneName() + "\n");
+						sb.append("---------------------------------------\n");
+						sb.append("Cannot add INCOMING isovist: " + geom.toString() + "\n");
+						sb.append("Polygon :" + thisPolygon.getId() + "\t" + thisPolygon.getGeometry().toString() + "\n");
+						sb.append("Polygon isovist: " + thisPolygon.getPolygonIsovist() + "\n");
+						sb.append("Union: " + finalIsovist + "\n");
+						sb.append("---------------------------------------\n");
+						sb.append(e.getMessage() + "\n");
+						sb.append("---------------------------------------\n\n");
+						loader.getLogFile().append(sb.toString());
+						System.out.println(sb.toString());
+					}
+				}
+			}
+			if (finalIsovist == null)
+				finalIsovist = thisPolygon.getPolygonIsovist();
+			thisPolygon.setFullIsovist(finalIsovist);
+		} else
+			thisPolygon.setFullIsovist(thisPolygon.getPolygonIsovist());
+
+		// Add the split to the stopwatch that collects the results in the SceneBuilder
+		split.stop();
+		SimonManager.getStopwatch("se.kth.akok.index.scene.SceneBuilder-isovist").addSplit(split);
+
 	}
 
 	/**
@@ -71,34 +124,56 @@ public class Isovist implements Runnable {
 	private void polygonIsovist(BasicPolygon polygon) throws TopologyException {
 		Collection<Geometry> pointIsovist = new ArrayList<Geometry>();
 		for (PolygonPoint point : polygon.getPolygonPoints()) {
-			pointIsovist(point);
-			if (point.getPointIsovist() != null)
-				pointIsovist.add(point.getPointIsovist());
-		}
-		Geometry[] polygonIsovist = pointIsovist.toArray(new Geometry[pointIsovist.size()]);
-		GeometryCollection collection = new GeometryCollection(polygonIsovist, factory);
-		Geometry union = null;
-		try {
-			union = collection.union();
-			polygon.setPolygonIsovist(union);
-		} catch (TopologyException e) {
-			Geometry theUnion = null;
-			for (PolygonPoint point : polygon.getPolygonPoints()) {
-				if (point.getPointIsovist() != null) {
 
-					if (theUnion == null)
-						theUnion = point.getPointIsovist();
-					else {
+			// Compute the isovist of PolygonPoint point.
+			pointIsovist(point);
+			if (point.getPointIsovist() != null) {
+				// Add the isovist only if it is not empty. An isovist can of a polygon can be empty if none of the rays can be combined to create a triangle.
+				pointIsovist.add(point.getPointIsovist());
+			}
+		}
+
+//		// TODO: change this to be done manually for each polygon point IsoVist
+//		Geometry[] polygonIsovist = pointIsovist.toArray(new Geometry[pointIsovist.size()]);
+//		GeometryCollection collection = new GeometryCollection(polygonIsovist, factory);
+//		Geometry union = null;
+//		try {
+//			union = collection.union();
+//			polygon.setPolygonIsovist(union);
+//		} catch (TopologyException e) {
+//			}
+		Geometry theUnion = null;
+		for (PolygonPoint point : polygon.getPolygonPoints()) {
+			if (point.getPointIsovist() != null) {
+
+				if (theUnion == null)
+					theUnion = point.getPointIsovist();
+				else {
+					try {
+						theUnion = theUnion.union(point.getPointIsovist());
+					} catch (TopologyException e1) {
+						// Try to do the union the opposite way.
 						try {
-							theUnion = theUnion.union(point.getPointIsovist());
-						} catch (TopologyException e1) {
-							System.out.println("cannot add isovist of point: " + point.getPoint().toString() + " of polygon " + point.getPolygon().getGeometry().toString());
+							theUnion = point.getPointIsovist().union(theUnion);
+						}catch(TopologyException e2) {
+							StringBuilder sb = new StringBuilder();
+							sb.append("\n\n---------------------------------------\n");
+							sb.append("Test scene: " + loader.getSceneName() + "\n");
+							sb.append("---------------------------------------\n");
+							sb.append("Cannot add REGULAR isovist of point: " + point.getPoint().toString() + "\n");
+							sb.append("Polygon :" + point.getPolygon().getId() + "\t" + point.getPolygon().getGeometry().toString() + "\n");
+							sb.append("Isovist of point: " + point.getPointIsovist() + "\n");
+							sb.append("Union: " + theUnion + "\n");
+							sb.append("---------------------------------------\n");
+							sb.append(e1.getMessage() + "\n");
+							sb.append("---------------------------------------\n\n");
+							loader.getLogFile().append(sb.toString());
+							System.out.println(sb.toString());
 						}
 					}
 				}
 			}
 			polygon.setPolygonIsovist(theUnion);
-			System.out.println("=======================================\n" + theUnion.toString() + "\n=======================================\n");
 		}
 	}
 
@@ -135,7 +210,18 @@ public class Isovist implements Runnable {
 		for (Ray ray : startPoint.getAllRays()) {
 			allRays.put(ray.getAngle(), ray);
 		}
-		ArrayList<Ray> myRays = startPoint.getAllRays();
+
+		// if (startPoint.getPoint().toText().equals("POINT (2004233.38 8252313.35)")) {
+		// Set<Entry<Double, Collection<Ray>>> set = allRays.asMap().entrySet();
+		// for (Entry entry : set) {
+		// Collection<Ray> theRays = (Collection<Ray>) entry.getValue();
+		// System.out.println("---------------");
+		// for (Ray ray : theRays)
+		// System.out.println(startPoint.getAllRays().indexOf(ray) + "\t" + ray.getAngle() + "\t" + ray.getLine().toString());
+		// }
+		// }
+
+		LinkedList<Ray> myRays = startPoint.getAllRays();
 
 		GeometryFactory factory = new GeometryFactory();
 		Collection<Geometry> geometryCollection = new ArrayList<Geometry>();
@@ -175,19 +261,32 @@ public class Isovist implements Runnable {
 				}
 			}
 			checkedRays.addAll(currentRays);
-			try {
 				if (pointIsovist == null && union != null)
 					pointIsovist = union;
 				else if (union != null && !pointIsovist.equals(union)) {
-					pointIsovist = pointIsovist.union(union);
+					try {
+						pointIsovist = pointIsovist.union(union);
+					} catch (TopologyException e1) {
+						try{
+							pointIsovist = union.union(pointIsovist);
+						} catch (TopologyException e) {
+							StringBuilder sb = new StringBuilder();
+							sb.append("\n\n---------------------------------------\n");
+							sb.append("Test scene: " + loader.getSceneName() + "\n");
+							sb.append("---------------------------------------\n");
+							sb.append("Cannot add isovist of rays current: " + currentRays.get(0).getLine().toString() + "rays next: " + nextRays.get(0).getLine().toString() + "\n");
+							sb.append("Polygon :" + startPoint.getPolygon().getId() + "\t" + startPoint.getPolygon().getGeometry().toString() + "\n");
+							sb.append("Isovist of point - so far: " + pointIsovist.toString() + "\n");
+							sb.append("Triangle that failed: " + union.toString() + "\n");
+							sb.append("---------------------------------------\n");
+							sb.append(e.getMessage() + "\n");
+							sb.append("---------------------------------------\n\n");
+							loader.getLogFile().append(sb.toString());
+							System.out.println(sb.toString());
+						}
+						//throw e;
+					}
 				}
-			} catch (TopologyException e) {
-				System.out.println(union.toString());
-				System.out.println(pointIsovist.toString());
-				System.out.println(startPoint.getPoint().toString());
-				System.out.println(startPoint.getPolygon().getGeometry().toString());
-				throw e;
-			}
 		}
 		startPoint.setPointIsovist(pointIsovist);
 	}
@@ -204,7 +303,7 @@ public class Isovist implements Runnable {
 	 * @param allRays All rays categorized by angle in a multimap
 	 * @return the nextRay if exists.
 	 */
-	private List<Ray> getNextRayOf(Ray currentRay, ArrayList<Ray> myRays, ArrayListMultimap<Double, Ray> allRays) {
+	private List<Ray> getNextRayOf(Ray currentRay, LinkedList<Ray> myRays, ArrayListMultimap<Double, Ray> allRays) {
 		boolean found = false;
 		for (Ray ray : myRays) {
 			if (ray.getAngle().equals(currentRay.getAngle())) {
@@ -266,7 +365,7 @@ public class Isovist implements Runnable {
 							point = (Point) outerString.intersection(innerString);
 
 						} catch (ClassCastException e) {
-							System.out.println(intersection.toString() + "\touter: " + outer.getLine().toString() + "\tinner: " + inner.getLine().toString());
+							System.out.println("Casting intersection to point: " + intersection.toString() + "\touter: " + outer.getLine().toString() + "\tinner: " + inner.getLine().toString());
 						}
 						ArrayList<Coordinate> c1 = new ArrayList<Coordinate>();
 						c1.add(outer.getLine().p0);
@@ -310,16 +409,7 @@ public class Isovist implements Runnable {
 			System.out.println("polygon: " + polygon.getId());
 			throw e;
 		}
-
-		// Union all the polygons to extract the isovist of incoming polygon points.
-		Geometry union = null;
-		for (Geometry geom : geometryCollection) {
-			if (union == null)
-				union = geom;
-			else
-				union = union.union(geom);
-		}
-		polygon.setIncomingIsovist(union);
+		polygon.setIncomingIsovist(geometryCollection);
 	}
 
 	/**
@@ -332,7 +422,6 @@ public class Isovist implements Runnable {
 	 * @return true if it intersects with at least one of the scene polygons
 	 */
 
-	// TODO: move this operation in the database and check if it speeds up the result.
 	private boolean intersectsWithScenePolygons(Polygon generatedPolygon, BasicPolygon thisPolygon) {
 		if (generatedPolygon.intersection(thisPolygon.getGeometry()).getArea() > 0.01)
 			return true;
@@ -346,7 +435,7 @@ public class Isovist implements Runnable {
 				try {
 					Geometry intersection = p.intersection(polygon.getGeometry());
 					// Due to high accuracy intersections occur when they shouldn't. Avoid them with the following if statement.
-					if (Double.compare(intersection.getArea(), 0.00001) < 0)
+					if (Double.compare(intersection.getArea(), MIN_AREA) < 0)
 						continue;
 					else
 						return true;

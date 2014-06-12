@@ -2,14 +2,14 @@ package se.kth.akok.index.algorithms.visiblepoint;
 
 import java.util.ArrayList;
 
-import se.kth.akok.index.geometries.line.Ray;
-import se.kth.akok.index.geometries.line.RayType;
 import se.kth.akok.index.geometries.operations.Touches;
 import se.kth.akok.index.geometries.point.BoundaryPoint;
 import se.kth.akok.index.geometries.point.PolygonPoint;
 import se.kth.akok.index.geometries.point.VisiblePoint;
-import se.kth.akok.index.geometries.point.VisibleType;
+import se.kth.akok.index.geometries.point.VisiblePointType;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
+import se.kth.akok.index.geometries.ray.Ray;
+import se.kth.akok.index.geometries.ray.RayType;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -58,8 +58,8 @@ public class VisiblePointsAlgorithmMemory {
 			LineSegment lineSegment = new LineSegment(startPoint.getPoint().getCoordinate(), polygonPoint.getPoint().getCoordinate());
 			if (Touches.lineTouchesWithPolygon(lineSegment.toGeometry(factory), polygonPoint.getPolygon().getGeometry()) && lineSegment.getLength() > MIN_DISTANCE) {
 				// added after spotting bug with geometry surrounding other geometries.
-				if (!intersectsWithOtherGeometries2(lineSegment.toGeometry(factory), startPoint, polygonPoint)) {
-					VisiblePoint visiblePoint = new VisiblePoint(polygonPoint.getPoint(), polygonPoint.getPolygon(), VisibleType.SAME_OBJECT_VISIBLE);
+				if (!intersectsWithOtherGeometries(lineSegment.toGeometry(factory), startPoint, polygonPoint)) {
+					VisiblePoint visiblePoint = new VisiblePoint(polygonPoint.getPoint(), polygonPoint.getPolygon(), VisiblePointType.SAME_OBJECT_VISIBLE);
 					visiblePoints.add(visiblePoint);
 					Ray ray = new Ray(lineSegment, RayType.VISIBLE_RAY, visiblePoint);
 					visiblePoint.setRay(ray);
@@ -78,12 +78,12 @@ public class VisiblePointsAlgorithmMemory {
 				Geometry startPointPolygon = startPoint.getPolygon().getGeometry();
 				// The minimum distance check is for some points that seem like duplicated in real scenarios. They are actually neighboring points, or two geometries that
 				// are different, contain the same point.
-				if (lineSegment.getLength() > MIN_DISTANCE && !intersectsWithOtherGeometries2(lineString, startPoint, polygonPoint)) {
+				if (lineSegment.getLength() > MIN_DISTANCE && !intersectsWithOtherGeometries(lineString, startPoint, polygonPoint)) {
 					boolean lineTouchesEndPolygon = Touches.lineTouchesWithPolygon(lineString, endPointPolygon);
 					boolean lineTouchesStartPolygon = Touches.lineTouchesWithPolygon(lineString, startPointPolygon);
 					// Two points are visible if the connecting line only touches those points.
 					if (lineTouchesEndPolygon && lineTouchesStartPolygon) {
-						VisiblePoint visiblePoint = new VisiblePoint(polygonPoint.getPoint(), polygon, VisibleType.OTHER_OBJECT_VISIBLE);
+						VisiblePoint visiblePoint = new VisiblePoint(polygonPoint.getPoint(), polygon, VisiblePointType.OTHER_OBJECT_VISIBLE);
 						visiblePoints.add(visiblePoint);
 						// Add the ray
 						Ray ray = new Ray(lineSegment, RayType.VISIBLE_RAY, visiblePoint);
@@ -99,7 +99,7 @@ public class VisiblePointsAlgorithmMemory {
 		for (Point endPoint : boundaryPoints) {
 			LineSegment lineSegment = new LineSegment(startPoint.getPoint().getCoordinate(), endPoint.getCoordinate());
 			LineString lineString = lineSegment.toGeometry(factory);
-			if (!intersectsWithOtherGeometries2(lineString, startPoint)) {
+			if (!intersectsWithOtherGeometries(lineString, startPoint)) {
 				boolean lineTouchesStartPolygon = Touches.lineTouchesWithPolygon(lineString, startPoint.getPolygon().getGeometry());
 				// Two points are visible if the connecting line only touches those points.
 				if (lineTouchesStartPolygon) {
@@ -124,7 +124,7 @@ public class VisiblePointsAlgorithmMemory {
 	 * @param endPoint PolygonPoint, the endPoint of the lineString
 	 * @return Returns true if the lineString intersects with other geometries, else false.
 	 */
-	private boolean intersectsWithOtherGeometries2(LineString lineString, PolygonPoint startPoint, PolygonPoint endPoint) {
+	private boolean intersectsWithOtherGeometries(LineString lineString, PolygonPoint startPoint, PolygonPoint endPoint) {
 		for(BasicPolygon polygon: polygons) {
 			if(startPoint.getPolygon().equals(polygon) || endPoint.getPolygon().equals(polygon))
 				continue;
@@ -143,7 +143,7 @@ public class VisiblePointsAlgorithmMemory {
 	 * @param startPoint PopygonPoint, the startPoint of the lineString
 	 * @return Returns true if the lineString intersects with other geometries, else false.
 	 */
-	private boolean intersectsWithOtherGeometries2(LineString lineString, PolygonPoint startPoint) {
+	private boolean intersectsWithOtherGeometries(LineString lineString, PolygonPoint startPoint) {
 		for(BasicPolygon polygon: polygons) {
 			if(startPoint.getPolygon().equals(polygon))
 				continue;
