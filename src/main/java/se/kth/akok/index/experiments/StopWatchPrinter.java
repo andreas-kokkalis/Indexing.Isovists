@@ -1,4 +1,4 @@
-package se.kth.akok.experiments.stopwatch;
+package se.kth.akok.index.experiments;
 
 import org.javasimon.Stopwatch;
 import org.javasimon.utils.SimonUtils;

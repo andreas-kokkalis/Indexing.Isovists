@@ -1,4 +1,4 @@
-package se.kth.akok.experiments.ray.shooting;
+package se.kth.akok.index.experiments;
 
 import java.io.FileNotFoundException;
 import java.sql.Connection;
@@ -12,7 +12,6 @@ import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.javasimon.Stopwatch;
 
-import se.kth.akok.experiments.stopwatch.StopWatchPrinter;
 import se.kth.akok.index.geometries.boundary.Boundary;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
 import se.kth.akok.index.scene.SceneBuilder;

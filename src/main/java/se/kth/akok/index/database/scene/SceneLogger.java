@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 import org.javasimon.Stopwatch;
 
-import se.kth.akok.experiments.stopwatch.StopWatchPrinter;
+import se.kth.akok.index.experiments.StopWatchPrinter;
 import se.kth.akok.index.geometries.point.IncomingPoint;
 import se.kth.akok.index.geometries.point.PolygonPoint;
 import se.kth.akok.index.geometries.point.ShadowPoint;

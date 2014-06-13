@@ -67,15 +67,16 @@ public class Isovist implements Runnable {
 			incomingIsovist(thisPolygon);
 
 		if (thisPolygon.getPolygonIsovist() == null) {
-			System.out.println("EXCEPTION polygon " + thisPolygon.getGeometry().toString());
-			throw (new NullPointerException("EXCEPTION polygon " + thisPolygon.getGeometry().toString()));
+			String e = "EXCEPTION NULL REGULAR ISOVIST polygon " + thisPolygon.getGeometry().toString();
+			System.out.println(e);
+			throw (new NullPointerException(e));
 		}
 
 		if (thisPolygon.getIncomingIsovist() != null) {
 			Geometry finalIsovist = null;
 			for (Geometry geom : thisPolygon.getIncomingIsovist()) {
 				try {
-					if (thisPolygon.getPolygonIsovist().contains(geom) || Double.compare(geom.getArea(), MIN_AREA) < 0)
+					if (thisPolygon.getPolygonIsovist().contains(geom))
 						continue;
 					finalIsovist = thisPolygon.getPolygonIsovist().union(geom);
 				} catch (IllegalArgumentException | TopologyException e1) {
@@ -97,13 +98,31 @@ public class Isovist implements Runnable {
 						System.out.println(sb.toString());
 					}
 				}
+			}if(finalIsovist != null) {
+				if(finalIsovist.getGeometryType().equals("GeometryCollection")) {
+					for(int i=0; i<finalIsovist.getNumGeometries(); i++) {
+						if(finalIsovist.getGeometryN(i).getGeometryType().equals("Polygon")) {
+							finalIsovist = finalIsovist.getGeometryN(i);
+							break;
+						}
+					}
+				}
 			}
-			if (finalIsovist == null)
+			else
 				finalIsovist = thisPolygon.getPolygonIsovist();
 			thisPolygon.setFullIsovist(finalIsovist);
+			
+			if(finalIsovist.getGeometryType().equals("GeometryCollection")) {
+				String e = "EXCEPTION GEOMETRY COLLECTION FINAL ISOVIST polygon " + thisPolygon.getGeometry().toString();
+				System.out.println(e);
+				throw (new NullPointerException(e));
+			}
+			
 		} else
 			thisPolygon.setFullIsovist(thisPolygon.getPolygonIsovist());
 
+		
+		
 		// Add the split to the stopwatch that collects the results in the SceneBuilder
 		split.stop();
 		SimonManager.getStopwatch("se.kth.akok.index.scene.SceneBuilder-isovist").addSplit(split);
@@ -409,6 +428,21 @@ public class Isovist implements Runnable {
 			System.out.println("polygon: " + polygon.getId());
 			throw e;
 		}
+		
+		ArrayList<Geometry> removeFromCollection = new ArrayList<Geometry>();
+		
+		for(Geometry geom: geometryCollection) {
+			if(Double.compare(geom.getArea(), MIN_AREA) <= 0) {
+				removeFromCollection.add(geom);
+			}
+			else if(!geom.getGeometryType().equals("Polygon")) {
+				removeFromCollection.add(geom);
+			}
+		}
+		
+		for(Geometry geom: removeFromCollection)
+			geometryCollection.remove(geom);
+		
 		polygon.setIncomingIsovist(geometryCollection);
 	}
 

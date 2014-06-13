@@ -8,18 +8,15 @@ import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.javasimon.Stopwatch;
 
-import se.kth.akok.experiments.stopwatch.StopWatchPrinter;
 import se.kth.akok.index.algorithms.isovist.Isovist;
 import se.kth.akok.index.database.scene.DatabaseConnection;
-import se.kth.akok.index.database.scene.RandomPointGenerator;
 import se.kth.akok.index.database.scene.SceneLoader;
 import se.kth.akok.index.database.scene.SceneLogger;
+import se.kth.akok.index.experiments.StopWatchPrinter;
 import se.kth.akok.index.geometries.boundary.Boundary;
 import se.kth.akok.index.geometries.point.PolygonPoint;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
 import se.kth.akok.index.thread.executors.VisibleShadowOrderExecutor;
-
-import com.vividsolutions.jts.geom.Point;
 
 /**
  * Scene Builder is responsible for loading the scene polygons, running the experiment and logging the results.
@@ -60,7 +57,7 @@ public class SceneBuilder {
 	 * @throws FileNotFoundException
 	 * @throws SQLException
 	 */
-	public void run() throws FileNotFoundException, SQLException {
+	public void buildIndex() throws FileNotFoundException, SQLException {
 
 		ArrayList<Thread> executionThreads = new ArrayList<Thread>();
 
@@ -134,9 +131,9 @@ public class SceneBuilder {
 		/*
 		 * Create & store the random points
 		 */
-		RandomPointGenerator rpg = new RandomPointGenerator(polygons, boundary.getBoundaryPoints());
-		ArrayList<Point> randomPoints = rpg.generatePoints(100);
-		sceneLogger.storeRandomPoints(randomPoints, polygons.get(0).getGeometry().getSRID());
+//		RandomPointGenerator rpg = new RandomPointGenerator(polygons, boundary.getBoundaryPoints());
+//		ArrayList<Point> randomPoints = rpg.generatePoints(100);
+//		sceneLogger.storeRandomPoints(randomPoints, polygons.get(0).getGeometry().getSRID());
 
 		connection.getConnection().close();
 		sceneLoader.getLogFile().close();
@@ -154,6 +151,10 @@ public class SceneBuilder {
 		return connection;
 	}
 
+	public SceneLogger getSceneLogger() {
+		return this.sceneLogger;
+	}
+
 	public static void main(String[] args) throws Exception {
 		// SceneBuilder scene = new SceneBuilder("gis", "scene_generated", "indexing_scene_generated_tbl", "indexing_boundary_generated_tbl");
 		// SceneBuilder scene = new SceneBuilder("gis", "scene_small", "indexing_scene_small_tbl", "indexing_boundary_small_tbl");
@@ -161,14 +162,6 @@ public class SceneBuilder {
 		// System.out.println("#Polygons: " + scene.getPolygons().size());
 		// System.out.println("#Points: " + scene.getPoints().size());
 		// scene.run();
-
-		 Experiments.testScene10();
-//		 Experiments.testScene50();
-//		Experiments.testScene100();
-//		 Experiments.testScene200();
-//		 Experiments.testScene300();
-//		 Experiments.testScene400();
-//		 Experiments.testScene500();
-
 	}
+
 }
