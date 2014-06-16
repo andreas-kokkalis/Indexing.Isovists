@@ -1,6 +1,5 @@
-package se.kth.akok.index.experiments;
+package se.kth.akok.index.algorithms.rayshooting;
 
-import java.io.FileNotFoundException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,8 +13,8 @@ import org.javasimon.Stopwatch;
 
 import se.kth.akok.index.geometries.boundary.Boundary;
 import se.kth.akok.index.geometries.polygon.BasicPolygon;
-import se.kth.akok.index.scene.SceneBuilder;
 
+import com.google.common.collect.TreeMultimap;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -27,9 +26,11 @@ import com.vividsolutions.jts.io.WKTReader;
 import com.vividsolutions.jts.operation.distance.DistanceOp;
 
 public class RayShooting {
-	private static double BUFFER_RADIUS = 500.0;
-	private static double ANGLE = (double) (2 * Math.PI) / 360;
-	private ArrayList<Point> randomPoints;
+	// private static double BUFFER_RADIUS = 500.0;
+	private double BUFFER_RADIUS;
+
+	private static double ANGLE = (double) (2 * Math.PI) / 1440;
+	private HashMap<Integer, Point> randomPoints;
 	private ArrayList<BasicPolygon> polygons;
 	@SuppressWarnings("unused")
 	private Boundary boundary;
@@ -44,23 +45,28 @@ public class RayShooting {
 	 * @param boundary The bounding box of the scene
 	 * @param connection The database connection
 	 */
-	public RayShooting(ArrayList<Point> randomPoints, ArrayList<BasicPolygon> polygons, Boundary boundary, Connection connection) {
+	public RayShooting(HashMap<Integer, Point> randomPoints, ArrayList<BasicPolygon> polygons, Boundary boundary, Connection connection) {
 		this.randomPoints = randomPoints;
 		this.polygons = polygons;
 		this.boundary = boundary;
 		this.connection = connection;
 		this.sceneSRID = polygons.get(1).getGeometry().getSRID();
+
+		LineSegment diagonal = new LineSegment(boundary.getMinX().getCoordinate(0), boundary.getMaxX().getCoordinate(1));
+		System.out.println("radius:\t" + diagonal.getLength() + "\tangle: " + (double)(ANGLE *180)/ Math.PI);
+		double angle = 
+		BUFFER_RADIUS = diagonal.getLength();
 	}
 
 	/**
 	 * Computes the isovist for all the provided random points.
 	 * 
-	 * @return A map that has as key the random point, and as value an array list that containes references to all the visible buildings for each key.
+	 * @return A map that has as key the random point, and as value an array list that contains references to all the visible buildings for each key.
 	 */
 	public HashMap<Point, ArrayList<BasicPolygon>> computeRayIsovist() {
 		HashMap<Point, ArrayList<BasicPolygon>> map = new HashMap<Point, ArrayList<BasicPolygon>>();
 		GeometryFactory factory = new GeometryFactory();
-		for (Point randomPoint : randomPoints) {
+		for (Point randomPoint : randomPoints.values()) {
 			Stopwatch stopwatch = SimonManager.getStopwatch("ray-shooting-module");
 			Split split = stopwatch.start();
 			Geometry buffer = randomPoint.buffer(BUFFER_RADIUS);
@@ -81,11 +87,37 @@ public class RayShooting {
 		return map;
 	}
 
+	public TreeMultimap<Integer, Integer> rayShootingIsovist() {
+		TreeMultimap<Integer, Integer> isovistResults = TreeMultimap.create();
+
+		GeometryFactory factory = new GeometryFactory();
+		for (Integer randomPointId : randomPoints.keySet()) {
+			Point randomPoint = randomPoints.get(randomPointId);
+			Stopwatch stopwatch = SimonManager.getStopwatch("ray-shooting-module");
+			Split split = stopwatch.start();
+			Geometry buffer = randomPoint.buffer(BUFFER_RADIUS);
+			ArrayList<Point> bufferPoints = getBufferEndPoints(buffer);
+
+			for (Point bufferPoint : bufferPoints) {
+				LineSegment ray = new LineSegment(randomPoint.getCoordinate(), bufferPoint.getCoordinate());
+				BasicPolygon visiblePolygon = setClosestIntersectedPolygon(ray.toGeometry(factory), randomPoint);
+				if (visiblePolygon != null) {
+					if (isovistResults == null || !isovistResults.containsEntry(randomPointId, visiblePolygon.getId()))
+						isovistResults.put(randomPointId, visiblePolygon.getId());
+				}
+			}
+			split.stop();
+			Stopwatch stopwatchOuter = SimonManager.getStopwatch("ray-shooting");
+			stopwatchOuter.addSplit(split);
+		}
+		return isovistResults;
+	}
+
 	/**
 	 * The function segments the buffer into tiny segments created by two consecutive rays shot from random point with angle difference ANGLE. Then it uses the postGIS
 	 * function ST_DumpPoints which returns all the points which form the segmented ring.
 	 * 
-	 * @param buffer The buffer arround the random point
+	 * @param buffer The buffer around the random point
 	 * @return The points contained by all segments on the exterior ring of the buffer.
 	 */
 	private ArrayList<Point> getBufferEndPoints(Geometry buffer) {
@@ -116,7 +148,7 @@ public class RayShooting {
 	}
 
 	/**
-	 * Computes the closesest building that the ray intersects.
+	 * Computes the closest building that the ray intersects.
 	 * 
 	 * @param ray The ray shot from startPoint to bufferPoint
 	 * @param startPoint THe startPoint (centroid) of the buffer
@@ -146,22 +178,5 @@ public class RayShooting {
 			}
 		}
 		return allCoordinates.get(closestPoint);
-	}
-
-	public static void main(String[] args) throws FileNotFoundException {
-//		SceneBuilder scene = new SceneBuilder("gis","scene_generated", "indexing_scene_generated_tbl", "indexing_boundary_generated_tbl");
-//		 SceneBuilder scene = new SceneBuilder("gis","scene_small", "indexing_scene_small_tbl", "indexing_boundary_small_tbl");
-		 SceneBuilder scene = new SceneBuilder("gis","scene_large", "indexing_scene_large_tbl", "indexing_boundary_large_tbl");
-
-		System.out.println("#Polygons: " + scene.getPolygons().size());
-		System.out.println("#Points: " + scene.getPoints().size());
-		
-		Stopwatch stopwatchOuter = SimonManager.getStopwatch("ray-shooting");
-		ArrayList<Point> randomPoints = scene.getSceneLoader().loadRandomPoints(500);
-		RayShooting rayShooting = new RayShooting(randomPoints, scene.getPolygons(), scene.getBoundary(), scene.getConnection().getConnection());
-		HashMap<Point, ArrayList<BasicPolygon>> map = rayShooting.computeRayIsovist();
-		StopWatchPrinter.printStopWatch(stopwatchOuter);
-		for (Point point : map.keySet())
-			System.out.println(map.get(point).size());
 	}
 }

@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import se.kth.akok.index.geometries.boundary.Boundary;
 import se.kth.akok.index.geometries.point.PolygonPoint;
@@ -180,18 +181,19 @@ public class SceneLoader {
 		this.boundary = new Boundary(minXSegment, maxXSegment, minYSegment, maxYSegment);
 	}
 
-	public ArrayList<Point> loadRandomPoints(int num) {
-		ArrayList<Point> randomPoints = new ArrayList<Point>();
+	public HashMap<Integer, Point> loadRandomPoints(int num) {
+		HashMap<Integer, Point> randomPoints = new HashMap<Integer, Point>();
 		String tableName = "random_points_" + sceneName + "_" + num;
-		String select = "Select ST_AsText(way) from " + tableName;
+		String select = "Select id, ST_AsText(way) from " + tableName;
 		try {
 			PreparedStatement statement = connection.prepareStatement(select, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 			ResultSet results = statement.executeQuery();
 			while (results.next()) {
-				String wktGeometry = results.getString(1);
+				int pointId = results.getInt(1);
+				String wktGeometry = results.getString(2);
 				Geometry geometry = new WKTReader().read(wktGeometry);
 				Point point = geometry.getCentroid();
-				randomPoints.add(point);
+				randomPoints.put(pointId, point);
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
