@@ -28,6 +28,7 @@ import com.vividsolutions.jts.operation.distance.DistanceOp;
 public class RayShooting {
 	// private static double BUFFER_RADIUS = 500.0;
 	private double BUFFER_RADIUS;
+	private static double MIN_DISTANCE = 0.01;
 
 	private static double ANGLE = (double) (2 * Math.PI) / 1440;
 	private HashMap<Integer, Point> randomPoints;
@@ -53,9 +54,8 @@ public class RayShooting {
 		this.sceneSRID = polygons.get(1).getGeometry().getSRID();
 
 		LineSegment diagonal = new LineSegment(boundary.getMinX().getCoordinate(0), boundary.getMaxX().getCoordinate(1));
-		System.out.println("radius:\t" + diagonal.getLength() + "\tangle: " + (double)(ANGLE *180)/ Math.PI);
-		double angle = 
-		BUFFER_RADIUS = diagonal.getLength();
+		System.out.println("radius:\t" + diagonal.getLength() + "\tangle: " + (double) (ANGLE * 180) / Math.PI);
+		double angle = BUFFER_RADIUS = diagonal.getLength();
 	}
 
 	/**
@@ -102,8 +102,12 @@ public class RayShooting {
 				LineSegment ray = new LineSegment(randomPoint.getCoordinate(), bufferPoint.getCoordinate());
 				BasicPolygon visiblePolygon = setClosestIntersectedPolygon(ray.toGeometry(factory), randomPoint);
 				if (visiblePolygon != null) {
-					if (isovistResults == null || !isovistResults.containsEntry(randomPointId, visiblePolygon.getId()))
+					if (isovistResults == null || !isovistResults.containsEntry(randomPointId, visiblePolygon.getId())) {
+						// TODO: debug message
+						if (randomPointId == 3)
+							System.out.println(ray.toString());
 						isovistResults.put(randomPointId, visiblePolygon.getId());
+					}
 				}
 			}
 			split.stop();
@@ -158,7 +162,7 @@ public class RayShooting {
 		GeometryFactory factory = new GeometryFactory();
 		HashMap<Coordinate, BasicPolygon> allCoordinates = new HashMap<Coordinate, BasicPolygon>();
 		for (BasicPolygon polygon : polygons) {
-			if (ray.intersects(polygon.getGeometry()) || !ray.touches(polygon.getGeometry())) {
+			if (ray.intersects(polygon.getGeometry()) || !rayTouchesPolygon(ray, polygon.getGeometry())) {
 				Coordinate coordinates[] = ray.intersection(polygon.getGeometry()).getCoordinates();
 				for (Coordinate coordinate : coordinates) {
 					allCoordinates.put(coordinate, polygon);
@@ -178,5 +182,15 @@ public class RayShooting {
 			}
 		}
 		return allCoordinates.get(closestPoint);
+	}
+
+	private boolean rayTouchesPolygon(LineString ray, Geometry polygon) {
+		if (ray.touches(polygon))
+			return true;
+		if (ray.intersects(polygon) && ray.isWithinDistance(polygon, MIN_DISTANCE))
+			return true;
+		if (!ray.touches(polygon) && !ray.intersects(polygon) && ray.isWithinDistance(polygon, MIN_DISTANCE))
+			return true;
+		return false;
 	}
 }

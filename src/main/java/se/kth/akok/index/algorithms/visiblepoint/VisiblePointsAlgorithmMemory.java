@@ -29,6 +29,7 @@ public class VisiblePointsAlgorithmMemory {
 	private PolygonPoint startPoint;
 	private ArrayList<Point> boundaryPoints;
 	private ArrayList<BasicPolygon> polygons;
+
 	/**
 	 * @param startPoint The point for which visible points are calculated
 	 * @param polygons All the polygons in the scene.
@@ -54,7 +55,7 @@ public class VisiblePointsAlgorithmMemory {
 		for (PolygonPoint polygonPoint : startPoint.getPolygon().getPolygonPoints()) {
 			if (startPoint.equals(polygonPoint))
 				continue;
-			
+
 			LineSegment lineSegment = new LineSegment(startPoint.getPoint().getCoordinate(), polygonPoint.getPoint().getCoordinate());
 			if (Touches.lineTouchesWithPolygon(lineSegment.toGeometry(factory), polygonPoint.getPolygon().getGeometry()) && lineSegment.getLength() > MIN_DISTANCE) {
 				// added after spotting bug with geometry surrounding other geometries.
@@ -125,18 +126,19 @@ public class VisiblePointsAlgorithmMemory {
 	 * @return Returns true if the lineString intersects with other geometries, else false.
 	 */
 	private boolean intersectsWithOtherGeometries(LineString lineString, PolygonPoint startPoint, PolygonPoint endPoint) {
-		for(BasicPolygon polygon: polygons) {
-			if(startPoint.getPolygon().equals(polygon) || endPoint.getPolygon().equals(polygon))
+		for (BasicPolygon polygon : polygons) {
+			if (startPoint.getPolygon().equals(polygon) || endPoint.getPolygon().equals(polygon))
 				continue;
-			if(lineString.intersects(polygon.getGeometry()))
+			if (lineString.intersects(polygon.getGeometry()))
 				return true;
 		}
 		return false;
 	}
+
 	/**
 	 * For a given lineString, it iterates through the known geometries, and tests if it intersects with them.
 	 * <p>
-	 * This function executes in the main memory, using the JTS library.
+	 * This function executes in the main memory, using the JTS library. It is used when checking rays from polygon point p, to the four points of the bounding box.
 	 * </p>
 	 * 
 	 * @param lineString The line string to check if it intersects with other geometries
@@ -144,10 +146,10 @@ public class VisiblePointsAlgorithmMemory {
 	 * @return Returns true if the lineString intersects with other geometries, else false.
 	 */
 	private boolean intersectsWithOtherGeometries(LineString lineString, PolygonPoint startPoint) {
-		for(BasicPolygon polygon: polygons) {
-			if(startPoint.getPolygon().equals(polygon))
+		for (BasicPolygon polygon : polygons) {
+			if (startPoint.getPolygon().equals(polygon))
 				continue;
-			if(lineString.intersects(polygon.getGeometry()))
+			if (lineString.intersects(polygon.getGeometry()))
 				return true;
 		}
 		return false;

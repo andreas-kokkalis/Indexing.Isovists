@@ -56,12 +56,12 @@ public class BuildIndexes {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, SQLException {
-//		BuildIndexes.testScene10();
+		BuildIndexes.testScene10();
 //		BuildIndexes.testScene50();
 //		BuildIndexes.testScene100();
 //		BuildIndexes.testScene200();
 //		BuildIndexes.testScene300();
 //		BuildIndexes.testScene400();
-		BuildIndexes.testScene500();
+//		BuildIndexes.testScene500();
 	}
 }

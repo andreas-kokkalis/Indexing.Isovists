@@ -24,6 +24,7 @@ public class BasicPolygon {
 	private Geometry geometry;
 	private ArrayList<Point> points;
 	private ArrayList<PolygonPoint> polygonPoints;
+	private ArrayList<PolygonPoint> reflectionPoints;
 	private ArrayList<IncomingPoint> incomingPoints;
 	private Geometry polygonIsovist;
 	private Collection<Geometry> incomingIsovist;
@@ -45,6 +46,7 @@ public class BasicPolygon {
 		this.polygonIsovist = null;
 		this.incomingIsovist = null;
 		this.incomingPoints = new ArrayList<IncomingPoint>();
+		this.reflectionPoints = new ArrayList<PolygonPoint>();
 	}
 
 	public Integer getId() {
