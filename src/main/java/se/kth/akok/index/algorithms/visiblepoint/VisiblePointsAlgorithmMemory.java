@@ -1,6 +1,7 @@
 package se.kth.akok.index.algorithms.visiblepoint;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import se.kth.akok.index.geometries.operations.Touches;
 import se.kth.akok.index.geometries.point.BoundaryPoint;
@@ -11,6 +12,7 @@ import se.kth.akok.index.geometries.polygon.BasicPolygon;
 import se.kth.akok.index.geometries.ray.Ray;
 import se.kth.akok.index.geometries.ray.RayType;
 
+import com.google.common.collect.TreeMultiset;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
@@ -37,8 +39,12 @@ public class VisiblePointsAlgorithmMemory {
 	 */
 	public VisiblePointsAlgorithmMemory(PolygonPoint startPoint, ArrayList<BasicPolygon> polygons, ArrayList<Point> boundaryPoints) {
 		this.startPoint = startPoint;
+//		SortPolygons sp = new SortPolygons(startPoint.getPoint(), polygons);
+//		this.polygons = sp.sort();
 		this.polygons = polygons;
 		this.boundaryPoints = boundaryPoints;
+		
+		
 	}
 
 	/**

@@ -67,8 +67,6 @@ public class SceneBuilder {
 
 		Stopwatch stopWatchShadow = SimonManager.getStopwatch("se.kth.akok.index.scene.SceneBuilder-visible-shadow-order");
 		for (BasicPolygon thisPolygon : polygons) {
-//			if(thisPolygon.getId() != 37836160)
-//				continue;
 			for (PolygonPoint point : thisPolygon.getPolygonPoints()) {
 				Thread t = new Thread(new VisibleShadowOrderExecutor(connection.getConnection(), point, polygons, boundary, sceneLoader.getBuildingsTable()));
 				executionThreads.add(t);
@@ -82,17 +80,13 @@ public class SceneBuilder {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		System.out.println("\n=========================================================");
 		StopWatchPrinter.printStopWatch(stopWatchShadow);
-		System.out.println("=========================================================");
 
 		Stopwatch stopWatchIsovist = SimonManager.getStopwatch("se.kth.akok.index.scene.SceneBuilder-isovist");
 
 		executionThreads.clear();
+		System.out.println("started isovist");
 		for (BasicPolygon polygon : polygons) {
-//			if(polygon.getId() != 37836160)
-//				continue;
-			
 			Thread t = new Thread(new Isovist(polygons, polygon, sceneLoader));
 			executionThreads.add(t);
 		}
@@ -107,16 +101,12 @@ public class SceneBuilder {
 		/*
 		 * Print stop watches
 		 */
-		System.out.println("\n=========================================================");
 		StopWatchPrinter.printStopWatch(stopWatchIsovist);
-		System.out.println("=========================================================");
 
 		split.stop();
 		System.out.println("Total runtime: " + stopwatchTotal);
 
 		sceneLogger.logExecutionTime(sceneLoader.getSceneName(), stopwatchTotal, stopWatchShadow, stopWatchIsovist);
-
-		// ==============================================
 
 		/*
 		 * Log the rays
@@ -127,13 +117,6 @@ public class SceneBuilder {
 			sceneLogger.writePolygonIsovist(thisPolygon, true, true);
 		}
 		sceneLogger.storeIsovists(polygons);
-
-		/*
-		 * Create & store the random points
-		 */
-//		RandomPointGenerator rpg = new RandomPointGenerator(polygons, boundary.getBoundaryPoints());
-//		ArrayList<Point> randomPoints = rpg.generatePoints(100);
-//		sceneLogger.storeRandomPoints(randomPoints, polygons.get(0).getGeometry().getSRID());
 
 		connection.getConnection().close();
 		sceneLoader.getLogFile().close();
@@ -153,15 +136,6 @@ public class SceneBuilder {
 
 	public SceneLogger getSceneLogger() {
 		return this.sceneLogger;
-	}
-
-	public static void main(String[] args) throws Exception {
-		// SceneBuilder scene = new SceneBuilder("gis", "scene_generated", "indexing_scene_generated_tbl", "indexing_boundary_generated_tbl");
-		// SceneBuilder scene = new SceneBuilder("gis", "scene_small", "indexing_scene_small_tbl", "indexing_boundary_small_tbl");
-		// SceneBuilder scene = new SceneBuilder("gis", "scene_large", "indexing_scene_large_tbl", "indexing_boundary_large_tbl");
-		// System.out.println("#Polygons: " + scene.getPolygons().size());
-		// System.out.println("#Points: " + scene.getPoints().size());
-		// scene.run();
 	}
 
 }

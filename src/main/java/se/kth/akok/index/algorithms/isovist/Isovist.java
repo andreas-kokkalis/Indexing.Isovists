@@ -2,7 +2,6 @@ package se.kth.akok.index.algorithms.isovist;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -62,26 +61,37 @@ public class Isovist implements Runnable {
 		Stopwatch stopwatch = SimonManager.getStopwatch("thread_" + thisPolygon.getId());
 		Split split = stopwatch.start();
 
+		// Compute the regular polygon isovist
 		polygonIsovist(thisPolygon);
+		// Compute the incoming isovist
 		if (!thisPolygon.getIncomingPoints().isEmpty())
 			incomingIsovist(thisPolygon);
 
+		// If polygon isovist is null, something went wrong, terminate.
 		if (thisPolygon.getPolygonIsovist() == null) {
 			String e = "EXCEPTION NULL REGULAR ISOVIST polygon " + thisPolygon.getGeometry().toString();
 			System.out.println(e);
 			throw (new NullPointerException(e));
 		}
 
+		// Merge incoming isovist with regular isovist.
 		if (thisPolygon.getIncomingIsovist() != null) {
 			Geometry finalIsovist = null;
 			for (Geometry geom : thisPolygon.getIncomingIsovist()) {
 				try {
-					if (thisPolygon.getPolygonIsovist().contains(geom))
+					if (thisPolygon.getPolygonIsovist().contains(geom)) {
 						continue;
-					finalIsovist = thisPolygon.getPolygonIsovist().union(geom);
+					}
+					if (finalIsovist == null)
+						finalIsovist = thisPolygon.getPolygonIsovist().union(geom);
+					else
+						finalIsovist = finalIsovist.union(geom);
 				} catch (IllegalArgumentException | TopologyException e1) {
 					try {
-						finalIsovist = geom.union(thisPolygon.getPolygonIsovist());
+						if (finalIsovist == null)
+							finalIsovist = geom.union(thisPolygon.getPolygonIsovist());
+						else
+							finalIsovist = geom.union(finalIsovist);
 					} catch (IllegalArgumentException | TopologyException e) {
 						StringBuilder sb = new StringBuilder();
 						sb.append("\n\n---------------------------------------\n");
@@ -95,29 +105,21 @@ public class Isovist implements Runnable {
 						sb.append(e.getMessage() + "\n");
 						sb.append("---------------------------------------\n\n");
 						loader.getLogFile().append(sb.toString());
-						System.out.println(sb.toString());
+//						System.out.println(sb.toString());
 					}
 				}
-			}
-			if (finalIsovist != null) {
-				if (finalIsovist.getGeometryType().equals("GeometryCollection")) {
-					for (int i = 0; i < finalIsovist.getNumGeometries(); i++) {
-						if (finalIsovist.getGeometryN(i).getGeometryType().equals("Polygon")) {
-							finalIsovist = finalIsovist.getGeometryN(i);
-							break;
+				if (finalIsovist != null) {
+					if (finalIsovist.getGeometryType().equals("GeometryCollection")) {
+						for (int i = 0; i < finalIsovist.getNumGeometries(); i++) {
+							if (finalIsovist.getGeometryN(i).getGeometryType().equals("Polygon")) {
+								finalIsovist = finalIsovist.getGeometryN(i);
+								break;
+							}
 						}
 					}
 				}
-			} else
-				finalIsovist = thisPolygon.getPolygonIsovist();
-			thisPolygon.setFullIsovist(finalIsovist);
-
-			if (finalIsovist.getGeometryType().equals("GeometryCollection")) {
-				String e = "EXCEPTION GEOMETRY COLLECTION FINAL ISOVIST polygon " + thisPolygon.getGeometry().toString();
-				System.out.println(e);
-				throw (new NullPointerException(e));
 			}
-
+			thisPolygon.setFullIsovist(finalIsovist);
 		} else
 			thisPolygon.setFullIsovist(thisPolygon.getPolygonIsovist());
 
@@ -150,15 +152,6 @@ public class Isovist implements Runnable {
 			}
 		}
 
-		// // TODO: change this to be done manually for each polygon point IsoVist
-		// Geometry[] polygonIsovist = pointIsovist.toArray(new Geometry[pointIsovist.size()]);
-		// GeometryCollection collection = new GeometryCollection(polygonIsovist, factory);
-		// Geometry union = null;
-		// try {
-		// union = collection.union();
-		// polygon.setPolygonIsovist(union);
-		// } catch (TopologyException e) {
-		// }
 		Geometry theUnion = null;
 		for (PolygonPoint point : polygon.getPolygonPoints()) {
 			if (point.getPointIsovist() != null) {
@@ -218,7 +211,6 @@ public class Isovist implements Runnable {
 	private void pointIsovist(PolygonPoint startPoint) throws TopologyException {
 		if (startPoint.isPointIsovistNotComputable()) {
 			startPoint.setPointIsovist(null);
-			System.out.println("isovist not comutable: point\t" + startPoint.getPoint() + "\tpolygon\t" + startPoint.getPolygon().getGeometry().toString());
 			return;
 		}
 
@@ -227,16 +219,6 @@ public class Isovist implements Runnable {
 		for (Ray ray : startPoint.getAllRays()) {
 			allRays.put(ray.getAngle(), ray);
 		}
-
-		// if (startPoint.getPoint().toText().equals("POINT (2004233.38 8252313.35)")) {
-		// Set<Entry<Double, Collection<Ray>>> set = allRays.asMap().entrySet();
-		// for (Entry entry : set) {
-		// Collection<Ray> theRays = (Collection<Ray>) entry.getValue();
-		// System.out.println("---------------");
-		// for (Ray ray : theRays)
-		// System.out.println(startPoint.getAllRays().indexOf(ray) + "\t" + ray.getAngle() + "\t" + ray.getLine().toString());
-		// }
-		// }
 
 		LinkedList<Ray> myRays = startPoint.getAllRays();
 
@@ -270,9 +252,19 @@ public class Isovist implements Runnable {
 						geometryCollection.add(polygon);
 						if (union == null)
 							union = polygon;
-						else
-							union = union.union(polygon);
-						if (Double.compare(union.getArea(), 0.01) < 0)
+						else {
+							try {
+								union = union.union(polygon);
+							} catch (TopologyException e) {
+								try {
+									union = polygon.union(union);
+								} catch (TopologyException e1) {
+									loader.getLogFile().append("\nCould not add point isovist of: " + startPoint.getPoint().toString() + "\tisovist: " + polygon.toString());
+									System.out.println("could not add point isovist of: " + startPoint.getPoint().toString() + "\tisovist: " + polygon.toString());
+								}
+							}
+						}
+						if (Double.compare(union.getArea(), MIN_AREA) < 0)
 							union = null;
 					}
 				}
@@ -301,7 +293,6 @@ public class Isovist implements Runnable {
 						loader.getLogFile().append(sb.toString());
 						System.out.println(sb.toString());
 					}
-					// throw e;
 				}
 			}
 		}
@@ -352,130 +343,121 @@ public class Isovist implements Runnable {
 		Collection<Geometry> geometryCollection = new ArrayList<Geometry>();
 
 		ArrayList<Ray> incomingRays = new ArrayList<Ray>();
-		for (IncomingPoint incomingPoint : polygon.getIncomingPoints())
-			if (!incomingPoint.getRay().getLine().toGeometry(factory).within(polygon.getPolygonIsovist())) {
-				incomingRays.add(incomingPoint.getRay());
-				if(polygon.getId().equals(41095664) )
-					System.out.println(incomingPoint.getRay().getLine());
-			}
-		try {
+		for (IncomingPoint incomingPoint : polygon.getIncomingPoints()) {
+			// if (!incomingPoint.getRay().getLine().toGeometry(factory).within(polygon.getPolygonIsovist())) {
+			incomingRays.add(incomingPoint.getRay());
+			// System.out.println(polygon.getIncomingPoints().indexOf(incomingPoint)+ ";" + incomingPoint.getRay().getLine().toString());
+		}
+		// }
+		// try {
+		ArrayListMultimap<Ray, Ray> checkedRays = ArrayListMultimap.create();
+		// HashSet<Ray> checkedRays = new HashSet<Ray>();
+		for (Ray outer : incomingRays) {
+			for (Ray inner : incomingRays) {
+				// Check only rays that where not checked from the outer for loop.
+				if (outer.equals(inner) || checkedRays.containsEntry(outer, inner) || checkedRays.containsEntry(inner, outer))
+					continue;
 
-			HashSet<Ray> checkedRays = new HashSet<Ray>();
-			for (Ray outer : incomingRays) {
-				for (Ray inner : incomingRays) {
-					// Check rays that their starting points are collinear and the line is a polygon edge
-					LineSegment line = new LineSegment(outer.getLine().p0, inner.getLine().p0);
-					Coordinate middleCoordinate = line.midPoint();
-					Point middlePoint = factory.createPoint(middleCoordinate);
-					// If the middle point of the line is not on the polygon, then inner_p0 and outer_p0 are not on the same polygon edge
-					if (polygon.getGeometry().touches(middlePoint) || polygon.getGeometry().isWithinDistance(middlePoint, MIN_DISTANCE)) {
+				// Check rays that their starting points are collinear and the line is a polygon edge
+				LineSegment line = new LineSegment(outer.getLine().p0, inner.getLine().p0);
+				Coordinate middleCoordinate = line.midPoint();
+				Point middlePoint = factory.createPoint(middleCoordinate);
+				// If the middle point of the line is not on the polygon, then inner_p0 and outer_p0 are not on the same polygon edge
+				if (middlePointOnPolygonBoundary(middlePoint, polygon.getGeometry())) {
+					LineString outerString = outer.getLine().toGeometry(factory);
+					LineString innerString = inner.getLine().toGeometry(factory);
+					// The two chosen line segments intersect. Two triangles are formed. (newPolygon1 and newPolygon2)
+					if (outerString.intersects(innerString)) {
+						Point point = null;
+						try {
+							point = (Point) outerString.intersection(innerString);
 
-						// TODO: check every possible combination
-
-						// Check only rays that where not checked from the outer for loop.
-						if (/*checkedRays.contains(inner) || */outer.equals(inner))
+						} catch (ClassCastException e) {
 							continue;
-
-						LineString outerString = outer.getLine().toGeometry(factory);
-						LineString innerString = inner.getLine().toGeometry(factory);
-						// The two chosen line segments intersect. Two triangles are formed. (newPolygon1 and newPolygon2)
-						if (outerString.intersects(innerString)) {
-							Geometry intersection = outerString.intersection(innerString);
-							Point point = null;
-							try {
-								point = (Point) outerString.intersection(innerString);
-
-							} catch (ClassCastException e) {
-								System.out.println("Casting intersection to point: " + intersection.toString() + "\touter: " + outer.getLine().toString() + "\tinner: " + inner.getLine().toString());
-							}
-							ArrayList<Coordinate> c1 = new ArrayList<Coordinate>();
-							c1.add(outer.getLine().p0);
-							c1.add(point.getCoordinate());
-							c1.add(inner.getLine().p0);
-							c1.add(outer.getLine().p0);
-							Coordinate[] allCoordinates1 = c1.toArray(new Coordinate[c1.size()]);
-							LinearRing linearRing1 = factory.createLinearRing(allCoordinates1);
-							Polygon newPolygon1 = new Polygon(linearRing1, null, factory);
-							if (newPolygon1.isValid() && !intersectsWithScenePolygons(newPolygon1, polygon))
-								geometryCollection.add(newPolygon1);
-							ArrayList<Coordinate> c2 = new ArrayList<Coordinate>();
-							c2.add(outer.getLine().p1);
-							c2.add(point.getCoordinate());
-							c2.add(inner.getLine().p1);
-							c2.add(outer.getLine().p1);
-							Coordinate[] allCoordinates2 = c2.toArray(new Coordinate[c2.size()]);
-							LinearRing linearRing2 = factory.createLinearRing(allCoordinates2);
-							Polygon newPolygon2 = new Polygon(linearRing2, null, factory);
-							if (newPolygon2.isValid() && !intersectsWithScenePolygons(newPolygon2, polygon))
-								geometryCollection.add(newPolygon2);
 						}
-						// The two line segments do not intersect. A polygon is formed.
-						else {
-							ArrayList<Coordinate> c = new ArrayList<Coordinate>();
-							c.add(outer.getLine().p0);
-							c.add(inner.getLine().p0);
-							c.add(inner.getLine().p1);
-							c.add(outer.getLine().p1);
-							c.add(outer.getLine().p0);
-							Coordinate[] allCoordinates = c.toArray(new Coordinate[c.size()]);
-							LinearRing linearRing = factory.createLinearRing(allCoordinates);
-							Polygon newPolygon = new Polygon(linearRing, null, factory);
-							if (newPolygon.isValid() && !intersectsWithScenePolygons(newPolygon, polygon))
+						ArrayList<Coordinate> c1 = new ArrayList<Coordinate>();
+						c1.add(outer.getLine().p0);
+						c1.add(point.getCoordinate());
+						c1.add(inner.getLine().p0);
+						c1.add(outer.getLine().p0);
+						Coordinate[] allCoordinates1 = c1.toArray(new Coordinate[c1.size()]);
+						LinearRing linearRing1 = factory.createLinearRing(allCoordinates1);
+						Polygon newPolygon1 = new Polygon(linearRing1, null, factory);
+
+						if (newPolygon1.getArea() > MIN_AREA && !intersectsWithBuildings(newPolygon1, polygon))
+							geometryCollection.add(newPolygon1);
+
+						ArrayList<Coordinate> c2 = new ArrayList<Coordinate>();
+						c2.add(outer.getLine().p1);
+						c2.add(point.getCoordinate());
+						c2.add(inner.getLine().p1);
+						c2.add(outer.getLine().p1);
+						Coordinate[] allCoordinates2 = c2.toArray(new Coordinate[c2.size()]);
+						LinearRing linearRing2 = factory.createLinearRing(allCoordinates2);
+						Polygon newPolygon2 = new Polygon(linearRing2, null, factory);
+
+						if (newPolygon2.getArea() > MIN_AREA && !intersectsWithBuildings(newPolygon2, polygon))
+							geometryCollection.add(newPolygon2);
+					}
+					// The two line segments do not intersect. A polygon is formed.
+					else {
+						ArrayList<Coordinate> c = new ArrayList<Coordinate>();
+						c.add(outer.getLine().p0);
+						c.add(inner.getLine().p0);
+						c.add(inner.getLine().p1);
+						c.add(outer.getLine().p1);
+						c.add(outer.getLine().p0);
+						Coordinate[] allCoordinates = c.toArray(new Coordinate[c.size()]);
+						LinearRing linearRing = factory.createLinearRing(allCoordinates);
+						Polygon newPolygon = new Polygon(linearRing, null, factory);
+
+						// if (newPolygon.isValid() && !intersectsWithScenePolygons(newPolygon, polygon))
+						if (newPolygon.getArea() > MIN_AREA && !intersectsWithBuildings(newPolygon, polygon)) {
+							geometryCollection.add(newPolygon);
+						}
+					}
+				} 
+				// Adds computation overhead - removed since the result is not affected.
+				/*
+				else {
+					// trying to merge points that are not on the same edge
+					LineString outerString = outer.getLine().toGeometry(factory);
+					LineString innerString = inner.getLine().toGeometry(factory);
+					if (!outerString.intersects(innerString)) {
+						ArrayList<Coordinate> c = new ArrayList<Coordinate>();
+						c.add(outer.getLine().p0);
+						c.add(inner.getLine().p0);
+						c.add(inner.getLine().p1);
+						c.add(outer.getLine().p1);
+						c.add(outer.getLine().p0);
+						Coordinate[] allCoordinates = c.toArray(new Coordinate[c.size()]);
+						LinearRing linearRing = factory.createLinearRing(allCoordinates);
+						Polygon newPolygon = new Polygon(linearRing, null, factory);
+
+						try {
+							Geometry reflectionIsv = newPolygon.difference(polygon.getGeometry());
+							if (reflectionIsv.getGeometryType().equals("Polygon") && !intersectsWithBuildings((Polygon) reflectionIsv, polygon))
 								geometryCollection.add(newPolygon);
-						}
-					} else {
-						// trying to merge points that are not on the same edge
-						LineString outerString = outer.getLine().toGeometry(factory);
-						LineString innerString = inner.getLine().toGeometry(factory);
-						if (!outerString.intersects(innerString)) {
-							ArrayList<Coordinate> c = new ArrayList<Coordinate>();
-							c.add(outer.getLine().p0);
-							c.add(inner.getLine().p0);
-							c.add(inner.getLine().p1);
-							c.add(outer.getLine().p1);
-							c.add(outer.getLine().p0);
-							Coordinate[] allCoordinates = c.toArray(new Coordinate[c.size()]);
-							LinearRing linearRing = factory.createLinearRing(allCoordinates);
-							Polygon newPolygon = new Polygon(linearRing, null, factory);
-
-							try {
-								Geometry reflectionIsv = newPolygon.difference(polygon.getGeometry());
-								if(polygon.getId().equals(41095664) && !reflectionIsv.getGeometryType().equals("Polygon"))
-									System.out.println(reflectionIsv.toText());
-								
-								
-//								if(!polygon.getPolygonIsovist().contains(reflectionIsv) && reflectionIsv.getGeometryType().equals("Polygon"))
-//									if(!reflectedIsvIntersectsWithScenePolygons((Polygon) reflectionIsv, polygon)) {
-//										if(polygon.getId().equals(41095664) )
-//											System.out.println(reflectionIsv.toText());
-//										 geometryCollection.add(newPolygon);
-//									}
-							} catch (TopologyException e) {
-
-							}
+						} catch (TopologyException e) {
+							// Could not create a valid polygon.
+							continue;
 						}
 					}
 				}
-//				checkedRays.add(outer);
+				*/
+				checkedRays.put(outer, inner);
 			}
-		} catch (TopologyException e) {
-			System.out.println("polygon: " + polygon.getId());
-			throw e;
 		}
 
+		// Remove invalid geometries
 		ArrayList<Geometry> removeFromCollection = new ArrayList<Geometry>();
-
 		for (Geometry geom : geometryCollection) {
-			if (Double.compare(geom.getArea(), MIN_AREA) <= 0) {
-				removeFromCollection.add(geom);
-			} else if (!geom.getGeometryType().equals("Polygon")) {
+			if (!geom.getGeometryType().equals("Polygon")) {
 				removeFromCollection.add(geom);
 			}
 		}
-
 		for (Geometry geom : removeFromCollection)
 			geometryCollection.remove(geom);
-
 		polygon.setIncomingIsovist(geometryCollection);
 	}
 
@@ -498,7 +480,6 @@ public class Isovist implements Runnable {
 			return true;
 		for (BasicPolygon polygon : allPolygons) {
 			if (p.intersects(polygon.getGeometry()) && !p.touches(polygon.getGeometry())) {
-				// System.out.println("Polygon: " + thisPolygon + "\totherPolygon" + polygon.getGeometry());
 				try {
 					Geometry intersection = p.intersection(polygon.getGeometry());
 					// Due to high accuracy intersections occur when they shouldn't. Avoid them with the following if statement.
@@ -507,36 +488,61 @@ public class Isovist implements Runnable {
 					else
 						return true;
 				} catch (TopologyException e) {
-					System.out.println(polygon.getGeometry().toString() + "\t" + thisPolygon.toString());
-					throw e;
+					try {
+						Geometry intersection = polygon.getGeometry().intersection(p);
+						if (Double.compare(intersection.getArea(), MIN_AREA) < 0)
+							continue;
+						else
+							return true;
+					} catch (TopologyException e1) {
+						// If cannot perform intersection because of Topology exception, assume it intersects.
+						return true;
+					}
 				}
 			}
 		}
 		return false;
 	}
-	
-	private boolean reflectedIsvIntersectsWithScenePolygons(Polygon generatedPolygon, BasicPolygon thisPolygon) {
-		final Polygon p = generatedPolygon;
-		if (Double.compare(generatedPolygon.getArea(), 0) == 0) // Used for the isovist of allPoints
-			return true;
+
+	/**
+	 * Allows intersection to be a lineString which means it touches.
+	 * 
+	 * @param generatedPolygon
+	 * @param thisPolygon
+	 * @return
+	 */
+	private boolean intersectsWithBuildings(Polygon generatedPolygon, BasicPolygon thisPolygon) {
 		for (BasicPolygon polygon : allPolygons) {
-			if(polygon.equals(thisPolygon))
+			if (polygon.equals(thisPolygon))
 				continue;
-			if (p.intersects(polygon.getGeometry()) && !p.touches(polygon.getGeometry())) {
-				// System.out.println("Polygon: " + thisPolygon + "\totherPolygon" + polygon.getGeometry());
+			if (generatedPolygon.intersects(polygon.getGeometry()) && !generatedPolygon.touches(polygon.getGeometry())) {
 				try {
-					Geometry intersection = p.intersection(polygon.getGeometry());
-					// Due to high accuracy intersections occur when they shouldn't. Avoid them with the following if statement.
-					if (Double.compare(intersection.getArea(), MIN_AREA) < 0)
-						continue;
-					else
+					Geometry intersection = generatedPolygon.intersection(polygon.getGeometry());
+					if (!intersection.getGeometryType().equals("LineString") || intersection.getArea() > MIN_AREA)
 						return true;
 				} catch (TopologyException e) {
-					System.out.println(polygon.getGeometry().toString() + "\t" + thisPolygon.toString());
-					throw e;
+					try {
+						Geometry intersection = generatedPolygon.intersection(polygon.getGeometry());
+						if (!intersection.getGeometryType().equals("LineString") || intersection.getArea() > MIN_AREA)
+							return true;
+					} catch (TopologyException e1) {
+						// If cannot perform intersection because of Topology exception, assume it intersects.
+						return true;
+					}
 				}
 			}
 		}
+		return false;
+	}
+
+	private boolean middlePointOnPolygonBoundary(Point middlePoint, Geometry polygon) {
+		Geometry boundary = polygon.getBoundary();
+		if (middlePoint.touches(polygon))
+			return true;
+		if (middlePoint.touches(boundary))
+			return true;
+		if (middlePoint.isWithinDistance(boundary, MIN_DISTANCE))
+			return true;
 		return false;
 	}
 }

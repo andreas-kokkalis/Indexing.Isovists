@@ -22,6 +22,7 @@ public class StopWatchPrinter {
 		if (stopwatch.getName() != null) {
 			sb.append("\n name:\t").append(stopwatch.getName()).append("\n");
 		}
+		System.out.println("=========================================================");
 		sb.append("\n total:\t\t\t").append(SimonUtils.presentNanoTime(stopwatch.getTotal()));
 		sb.append("\n counter:\t\t").append(stopwatch.getCounter());
 		sb.append("\n max:\t\t\t").append(SimonUtils.presentNanoTime(stopwatch.getMax()));
@@ -38,8 +39,32 @@ public class StopWatchPrinter {
 		sb.append("\n varianceN:\t\t").append(stopwatch.getVarianceN());
 		System.out.println(sb.toString());
 		System.out.println("=========================================================");
+		System.out.println("=========================================================");
 	}
 
+	public static String printStopWatchString(Stopwatch stopwatch) {
+		final StringBuilder sb = new StringBuilder();
+		sb.append("------StopwatchSample-----");
+		if (stopwatch.getName() != null) {
+			sb.append("\n name:\t").append(stopwatch.getName()).append("\n");
+		}
+		sb.append("\n total:\t\t\t").append(SimonUtils.presentNanoTime(stopwatch.getTotal()));
+		sb.append("\n counter:\t\t").append(stopwatch.getCounter());
+		sb.append("\n max:\t\t\t").append(SimonUtils.presentNanoTime(stopwatch.getMax()));
+		sb.append("\n min:\t\t\t").append(SimonUtils.presentNanoTime(stopwatch.getMin()));
+		sb.append("\n maxTimestamp:\t\t").append(SimonUtils.presentTimestamp(stopwatch.getMaxTimestamp()));
+		sb.append("\n minTimestamp:\t\t").append(SimonUtils.presentTimestamp(stopwatch.getMaxTimestamp()));
+		sb.append("\n active:\t\t").append(stopwatch.getActive());
+		sb.append("\n maxActive:\t\t").append(stopwatch.getMaxActive());
+		sb.append("\n maxActiveTimestamp:\t").append(SimonUtils.presentTimestamp(stopwatch.getMaxActiveTimestamp()));
+		sb.append("\n last:\t\t\t").append(SimonUtils.presentNanoTime(stopwatch.getLast()));
+		sb.append("\n mean:\t\t\t").append(SimonUtils.presentNanoTime((long) stopwatch.getMean()));
+		sb.append("\n standardDeviation:\t").append(SimonUtils.presentNanoTime((long) stopwatch.getStandardDeviation()));
+		sb.append("\n variance:\t\t").append(stopwatch.getVariance());
+		sb.append("\n varianceN:\t\t").append(stopwatch.getVarianceN());
+		return sb.toString();
+	}
+	
 	/**
 	 * Returns the string of the stopwatche's results.
 	 * 

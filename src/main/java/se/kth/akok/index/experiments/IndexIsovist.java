@@ -30,11 +30,11 @@ public class IndexIsovist {
 
 		String isovistTableName = scene.getSceneLoader().getSceneName() + "_all_isovists_mem";
 		String randomPointsTable = "random_points_" + scene.getSceneLoader().getSceneName() + "_" + numRandomPoints;
-		String query = "select r.id, s.polygon_id from " + isovistTableName + " s, " + randomPointsTable + " r where ST_Within(r.way, s.isovist)";
-		// Stopwatch stopwatch = SimonManager.getStopwatch("isovist-query_" + scene.getSceneLoader().getSceneName());
+		String query = "select r.id, s.polygon_id from " + isovistTableName + " s, " + randomPointsTable + " r where ST_Within(r.way, s.isovist) ORDER BY r.id";
+		Stopwatch stopwatch = SimonManager.getStopwatch("isovist-query_" + scene.getSceneLoader().getSceneName());
 		try {
 			PreparedStatement statement = connection.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-			// Split split = stopwatch.start();
+			Split split = stopwatch.start();
 			ResultSet results = statement.executeQuery();
 			results.last();
 			if (results.getRow() == 0) {
@@ -46,7 +46,7 @@ public class IndexIsovist {
 				int polygonId = results.getInt(2);
 				isovistResults.put(pointId, polygonId);
 			}
-			// split.stop();
+			split.stop();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -104,10 +104,10 @@ public class IndexIsovist {
 
 	public static void main(String[] args) throws FileNotFoundException, SQLException {
 
-		// randomPointsTest(100);
-		randomPointsTest(500);
-		randomPointsTest(500);
-		randomPointsTest(500);
+		 randomPointsTest(100);
+//		randomPointsTest(500);
+//		randomPointsTest(500);
+//		randomPointsTest(500);
 
 		// randomPointsTest(1000);
 

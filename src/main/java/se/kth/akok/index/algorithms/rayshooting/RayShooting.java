@@ -26,13 +26,16 @@ import com.vividsolutions.jts.io.WKTReader;
 import com.vividsolutions.jts.operation.distance.DistanceOp;
 
 public class RayShooting {
-	// private static double BUFFER_RADIUS = 500.0;
-	private double BUFFER_RADIUS;
 	private static double MIN_DISTANCE = 0.01;
 
-	private static double ANGLE = (double) (2 * Math.PI) / 1440;
+	
+	private double BUFFER_RADIUS; // diagonal of the scene
+	private double ANGLE_RADIANTS = (double) (2 * Math.PI) / 1440; // 0.25 degrees
+	private double ANGLE_DEGREES;
+	
 	private HashMap<Integer, Point> randomPoints;
 	private ArrayList<BasicPolygon> polygons;
+	
 	@SuppressWarnings("unused")
 	private Boundary boundary;
 	private Connection connection;
@@ -46,7 +49,7 @@ public class RayShooting {
 	 * @param boundary The bounding box of the scene
 	 * @param connection The database connection
 	 */
-	public RayShooting(HashMap<Integer, Point> randomPoints, ArrayList<BasicPolygon> polygons, Boundary boundary, Connection connection) {
+	public RayShooting(HashMap<Integer, Point> randomPoints, ArrayList<BasicPolygon> polygons, Boundary boundary, Connection connection, double angle, double radius) {
 		this.randomPoints = randomPoints;
 		this.polygons = polygons;
 		this.boundary = boundary;
@@ -54,8 +57,16 @@ public class RayShooting {
 		this.sceneSRID = polygons.get(1).getGeometry().getSRID();
 
 		LineSegment diagonal = new LineSegment(boundary.getMinX().getCoordinate(0), boundary.getMaxX().getCoordinate(1));
-		System.out.println("radius:\t" + diagonal.getLength() + "\tangle: " + (double) (ANGLE * 180) / Math.PI);
-		double angle = BUFFER_RADIUS = diagonal.getLength();
+		if(radius <=0)
+			BUFFER_RADIUS = diagonal.getLength();
+		else
+			BUFFER_RADIUS = radius;
+
+		if(angle >=0 ) {
+			ANGLE_RADIANTS = angle;
+		}
+		ANGLE_DEGREES = (double) (ANGLE_RADIANTS * 180) / Math.PI;
+		System.out.println("radius:\t" + BUFFER_RADIUS + " meters \tangle: " + ANGLE_DEGREES + " degrees");
 	}
 
 	/**
@@ -103,9 +114,6 @@ public class RayShooting {
 				BasicPolygon visiblePolygon = setClosestIntersectedPolygon(ray.toGeometry(factory), randomPoint);
 				if (visiblePolygon != null) {
 					if (isovistResults == null || !isovistResults.containsEntry(randomPointId, visiblePolygon.getId())) {
-						// TODO: debug message
-						if (randomPointId == 3)
-							System.out.println(ray.toString());
 						isovistResults.put(randomPointId, visiblePolygon.getId());
 					}
 				}
@@ -131,7 +139,7 @@ public class RayShooting {
 			PreparedStatement statement = connection.prepareStatement(select, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 			statement.setObject(1, buffer.toText());
 			statement.setInt(2, sceneSRID);
-			statement.setDouble(3, ANGLE);
+			statement.setDouble(3, ANGLE_RADIANTS);
 			statement.setDouble(4, BUFFER_RADIUS);
 
 			ResultSet results = statement.executeQuery();
@@ -192,5 +200,9 @@ public class RayShooting {
 		if (!ray.touches(polygon) && !ray.intersects(polygon) && ray.isWithinDistance(polygon, MIN_DISTANCE))
 			return true;
 		return false;
+	}
+
+	public double getBUFFER_RADIUS() {
+		return BUFFER_RADIUS;
 	}
 }

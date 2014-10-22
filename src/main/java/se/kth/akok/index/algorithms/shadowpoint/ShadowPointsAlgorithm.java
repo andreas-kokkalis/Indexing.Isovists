@@ -305,7 +305,7 @@ public class ShadowPointsAlgorithm {
 
 	/**
 	 * The function computes the equation of each line segment. Then tests for each boundary line segment if the resulting coordinate (x,y) falls into the corresponding
-	 * line segment. The four boundary segments are minX, maxX, minY, maxY. An extended segments intersects at least two of these boundary segments. The extended ray that
+	 * line segment. The four boundary segments are minX, maxX, minY, maxY. An extended segment intersects at least two of these boundary segments. The extended ray that
 	 * has same angle from the X axis with the initial visible ray is returned.
 	 * 
 	 * @param endPoint The visible point from startPoint.

@@ -46,7 +46,7 @@ public class BasicPolygon {
 		this.polygonIsovist = null;
 		this.incomingIsovist = null;
 		this.incomingPoints = new ArrayList<IncomingPoint>();
-		this.reflectionPoints = new ArrayList<PolygonPoint>();
+		this.setReflectionPoints(new ArrayList<PolygonPoint>());
 	}
 
 	public Integer getId() {
@@ -93,6 +93,22 @@ public class BasicPolygon {
 		this.incomingIsovist = incomingIsovist;
 	}
 
+	public Geometry getFullIsovist() {
+		return fullIsovist;
+	}
+
+	public void setFullIsovist(Geometry fullIsovist) {
+		this.fullIsovist = fullIsovist;
+	}
+
+	public ArrayList<PolygonPoint> getReflectionPoints() {
+		return reflectionPoints;
+	}
+
+	public void setReflectionPoints(ArrayList<PolygonPoint> reflectionPoints) {
+		this.reflectionPoints = reflectionPoints;
+	}
+
 	/**
 	 * Checks whether a point is equal to a known point of the polygon, or within minimum distance of a known polygon point.
 	 * 
@@ -123,12 +139,19 @@ public class BasicPolygon {
 		}
 		return false;
 	}
-
-	public Geometry getFullIsovist() {
-		return fullIsovist;
+	/**
+	 * Checks whether a reflection point is already stored for this polygon.
+	 * 
+	 * @param coordinate The coordinate of the incoming point.
+	 * @return Returns true, if the incoming point already exists.
+	 */
+	public boolean reflectionPointExists(Coordinate coordinate) {
+		GeometryFactory factory = new GeometryFactory();
+		for (PolygonPoint point : reflectionPoints) {
+			if ((point.getPoint().getCoordinate().equals(coordinate) || point.getPoint().isWithinDistance(factory.createPoint(coordinate), MIN_DISTANCE)))
+				return true;
+		}
+		return false;
 	}
 
-	public void setFullIsovist(Geometry fullIsovist) {
-		this.fullIsovist = fullIsovist;
-	}
 }

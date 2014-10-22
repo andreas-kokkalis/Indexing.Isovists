@@ -77,7 +77,6 @@ public class SceneLogger {
 					statement.setInt(2, polygon.getGeometry().getSRID());
 					statement.setObject(3, polygon.getId());
 					statement.addBatch();
-
 				}
 			}
 			statement.executeBatch();
